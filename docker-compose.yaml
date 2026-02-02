@@ -1,0 +1,30 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: echo
+      POSTGRES_USER: echo
+      POSTGRES_PASSWORD: echo
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: echo
+      RABBITMQ_DEFAULT_PASS: echo
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+volumes:
+  postgres_data:
+  rabbitmq_data:
