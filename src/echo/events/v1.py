@@ -6,9 +6,7 @@ from pydantic import BaseModel, Field, TypeAdapter, ValidationError, field_seria
 
 class SessionEvent(BaseModel):
     version: Literal["v1"] = Field(default="v1", frozen=True)
-    timestamp: datetime = Field(
-        default_factory=lambda: datetime.now(UTC)
-    )
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
     metadata: dict[str, Any] = Field(default_factory=dict)
     room_id: str
     opportunity_id: str
@@ -35,38 +33,31 @@ class SessionEvent(BaseModel):
 
 
 class SessionStarted(SessionEvent):
-    type: Literal["session_started"] = Field(
-        default="session_started", frozen=True
-    )
+    type: Literal["session_started"] = Field(default="session_started", frozen=True)
+
 
 class SessionEnded(SessionEvent):
-    type: Literal["session_ended"] = Field(
-        default="session_ended", frozen=True
-    )
+    type: Literal["session_ended"] = Field(default="session_ended", frozen=True)
     report_url: str
 
+
 class StartSessionRequest(SessionEvent):
-    type: Literal["start_session_request"] = Field(
-        default="start_session_request", frozen=True
-    )
+    type: Literal["start_session_request"] = Field(default="start_session_request", frozen=True)
     room_id: str
     report_url: str
 
+
 SessionEventDiscriminator = Annotated[
-    SessionStarted
-    | SessionEnded
-    | StartSessionRequest,
+    SessionStarted | SessionEnded | StartSessionRequest,
     Field(discriminator="type"),
 ]
 
 SessionEventAdapter = TypeAdapter(SessionEventDiscriminator)
 
+
 def deserialize_event(body: bytes) -> SessionEventDiscriminator:
     try:
-        event = cast(
-            SessionEventDiscriminator,
-            SessionEventAdapter.validate_json(body)
-        )
+        event = cast(SessionEventDiscriminator, SessionEventAdapter.validate_json(body))
         return event
     except ValidationError as exc:
         raise ValueError("Invalid session event") from exc

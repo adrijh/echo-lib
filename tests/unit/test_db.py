@@ -1,6 +1,7 @@
+from uuid import uuid4
+
 import pytest
 
-from uuid import uuid4
 import echo.events.v1 as events
 from echo.utils.store import DuckDBStore, Store
 
@@ -8,6 +9,7 @@ from echo.utils.store import DuckDBStore, Store
 @pytest.fixture
 def db() -> Store:
     return DuckDBStore.in_memory()
+
 
 ROOM_ID = str(uuid4())
 OPPORTUNITY_ID = str(uuid4())

@@ -44,7 +44,6 @@ class QueueWorker:
 
     @staticmethod
     async def get_queue_connection() -> AbstractRobustConnection:
-
         return await aio_pika.connect_robust(
             host=os.environ["RABBITMQ_HOST"],
             port=int(os.environ["RABBITMQ_PORT"]),

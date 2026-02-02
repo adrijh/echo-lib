@@ -1,0 +1,10 @@
+import os
+
+# SIP Trunk
+SIP_TRUNK_ID = os.environ["SIP_TRUNK_ID"]
+SIP_NUMBER = os.environ["SIP_NUMBER"]
+
+# Azure
+AZURE_ACCOUNT_NAME = os.environ["AZURE_ACCOUNT_NAME"]
+AZURE_ACCOUNT_KEY = os.environ["AZURE_ACCOUNT_KEY"]
+AZURE_CONTAINER = os.environ["AZURE_CONTAINER"]
