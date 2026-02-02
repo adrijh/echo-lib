@@ -15,7 +15,6 @@ class StoreRow(NamedTuple):
     report_url: datetime
 
 
-
 class Store(Protocol):
     def set_room_start(self, room_id: str, opportunity_id: str, start_time: datetime) -> None: ...
     def set_room_end(self, room_id: str, end_time: datetime) -> None: ...

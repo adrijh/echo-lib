@@ -14,7 +14,7 @@ class SessionEvent(BaseModel):
     @field_validator("timestamp", mode="before")
     @classmethod
     def parse_unix_ts(cls, v: float | int | datetime) -> datetime:
-        if isinstance(v, (int, float)):
+        if isinstance(v, int | float):
             return datetime.fromtimestamp(v, tz=UTC)
 
         return v

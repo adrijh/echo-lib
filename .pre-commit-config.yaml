@@ -29,6 +29,7 @@ repos:
           "types-PyYAML",
           "types-requests",
           "types-python-dateutil",
+          "types-Markdown",
         ]
   - repo: local
     hooks:
