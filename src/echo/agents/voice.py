@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Awaitable
+from collections.abc import Awaitable
+from typing import TYPE_CHECKING, Any
+
 from livekit.agents import (
     AgentServer,
     cli,
@@ -10,8 +12,10 @@ from livekit.agents.worker import ServerType
 from echo.utils.monitoring import setup_job_tracing
 
 if TYPE_CHECKING:
-    from typing import Awaitable, Callable
+    from collections.abc import Awaitable, Callable
+
     from livekit.agents import JobContext, JobRequest
+
 
 class VoiceAgent:
     def __init__(
@@ -41,8 +45,7 @@ class VoiceAgent:
         return server
 
     def _tracing_decorator(
-        self,
-        entrypoint: Callable[[JobContext], Awaitable[None]]
+        self, entrypoint: Callable[[JobContext], Awaitable[None]]
     ) -> Callable[[JobContext], Awaitable[None]]:
         async def inner(ctx: JobContext) -> None:
             service_name = f"echo-{self.agent_name}"

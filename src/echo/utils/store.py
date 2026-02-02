@@ -8,6 +8,7 @@ from echo.utils import queries as q
 
 type StoreRow = tuple[UUID, UUID, datetime, datetime | None, str | None]
 
+
 class Store(Protocol):
     def set_room_start(self, room_id: str, opportunity_id: str, start_time: datetime) -> None: ...
     def set_room_end(self, room_id: str, end_time: datetime) -> None: ...
@@ -16,18 +17,14 @@ class Store(Protocol):
 
 
 class DuckDBStore:
-    def __init__(
-        self,
-        conn: duckdb.DuckDBPyConnection,
-        table_name: str = "rooms"
-    ) -> None:
+    def __init__(self, conn: duckdb.DuckDBPyConnection, table_name: str = "rooms") -> None:
         self.conn = conn
         self.table_name = table_name
         self._setup_tables()
 
     @classmethod
     def with_postgres(cls) -> Self:
-        conn = duckdb.connect(config = {'threads': 1})
+        conn = duckdb.connect(config={"threads": 1})
         conn.sql(q.CREATE_POSTGRES_SECRET_SQL)
         conn.sql(q.ATTACH_POSTGRES_SQL)
         return cls(
@@ -37,7 +34,7 @@ class DuckDBStore:
 
     @classmethod
     def in_memory(cls) -> Self:
-        conn = duckdb.connect(config = {'threads': 1})
+        conn = duckdb.connect(config={"threads": 1})
         return cls(conn=conn, table_name="memory.rooms")
 
     def _setup_tables(self) -> None:
@@ -57,7 +54,7 @@ class DuckDBStore:
                 start_time,
                 None,
                 None,
-            )
+            ),
         )
 
     def set_room_end(
@@ -73,7 +70,7 @@ class DuckDBStore:
                 None,
                 end_time,
                 None,
-            )
+            ),
         )
 
     def set_room_report(self, room_id: str, report_url: str) -> None:
@@ -85,7 +82,7 @@ class DuckDBStore:
                 None,
                 None,
                 report_url,
-            )
+            ),
         )
 
     def get_rooms(self) -> list[tuple[Any]]:

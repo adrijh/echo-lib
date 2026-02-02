@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 
 from echo.worker.queue import QueueWorker
 
+
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncGenerator[None]:
     worker = await QueueWorker.build()
@@ -23,6 +24,7 @@ async def list_sessions() -> JSONResponse:
         status_code=200,
         content=[],
     )
+
 
 @app.post("/sessions")
 async def start_session() -> JSONResponse:

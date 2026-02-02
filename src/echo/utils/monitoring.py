@@ -1,6 +1,6 @@
 import os
-from uuid import uuid4
 from collections.abc import Mapping
+from uuid import uuid4
 
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
