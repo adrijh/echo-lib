@@ -11,6 +11,7 @@ from echo.worker.registry import register_handler
 
 logger = configure_logger(__name__)
 
+from echo.worker.email_asesor.main import run_email_asesor_workflow
 
 @register_handler(events.SessionStarted)
 async def set_session_start(event: events.SessionStarted) -> None:
@@ -24,9 +25,14 @@ async def set_session_ended(event: events.SessionEnded) -> None:
 
 @register_handler(events.SessionEnded)
 async def create_session_summary(event: events.SessionEnded) -> None:
-    # Parte de alfonso
-    pass
-
+    logger.info(f"Handler triggered for SessionEnded: {event.session_id}")
+    
+    event_payload = {
+        "room_id": event.session_id,
+        "session_blob": event.transcript_uri,
+    }
+    
+    await run_email_asesor_workflow(event_payload)
 
 @register_handler(events.StartSessionRequest)
 async def start_call(event: events.StartSessionRequest) -> None:
