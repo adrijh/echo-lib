@@ -8,7 +8,7 @@ from echo.utils import queries as q
 
 
 class StoreRow(NamedTuple):
-    room_id: UUID
+    room_id: str
     opportunity_id: UUID
     start_time: datetime
     end_time: datetime

@@ -19,17 +19,17 @@ async def load_transcription(state: SummaryState) -> dict[str, Any]:
     if not blob_url:
         raise ValueError("session_blob is missing")
 
-    logger.info(f"Node 1: Preparing context for Room {room_id}")
+    logger.debug(f"Node 1: Preparing context for Room {room_id}")
 
     content = await get_blob_content(blob_url)
 
-    logger.info(f"Transcription loaded ({len(content)} chars): {content[:50]}...")
+    logger.debug(f"Transcription loaded ({len(content)} chars): {content[:50]}...")
 
     return {"transcription": content}
 
 
 async def generate_summary(state: SummaryState) -> dict[str, Any]:
-    logger.info("Node 2: Summarizing transcription...")
+    logger.debug("Node 2: Summarizing transcription...")
 
     if "Error" in state.get("final_response", ""):
         return {}
@@ -45,7 +45,7 @@ async def generate_summary(state: SummaryState) -> dict[str, Any]:
 
     response = await llm.ainvoke([("system", system_prompt), ("user", user_content)])
 
-    logger.info(f"Summary generated: {response.content[:50]}...")
+    logger.debug(f"Summary generated: {response.content[:50]}...")
 
     return {"messages": [response], "final_response": response.content}
 
@@ -62,7 +62,7 @@ async def send_email(state: SummaryState) -> dict[str, Any]:
     summary_markdown = state.get("final_response")
     raw_text = state.get("transcription")
 
-    logger.info(f"Node 3: Dispatching summary for Room {room_id}")
+    logger.debug(f"Node 3: Dispatching summary for Room {room_id}")
 
     if summary_markdown:
         email_service.send_summary_email(

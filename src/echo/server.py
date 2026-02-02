@@ -4,18 +4,31 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
-from echo.worker.queue import QueueWorker
+from echo.logger import configure_logger
+from echo.worker.queue import QueueWorker, RabbitQueue
 
+log = configure_logger(__name__)
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncGenerator[None]:
-    worker = await QueueWorker.build()
+    log.info("Setting up worker...")
+
+    queue = await RabbitQueue.build()
+    worker = QueueWorker(queue)
     await worker.start()
     yield
     await worker.stop()
 
 
 app = FastAPI(lifespan=lifespan)
+
+
+@app.get("/health", tags=["health"])
+def healthcheck():
+    return JSONResponse(
+        status_code=200,
+        content={"status": "ok"}
+    )
 
 
 @app.get("/sessions")

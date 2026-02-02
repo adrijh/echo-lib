@@ -1,5 +1,6 @@
 import os
-from typing import Self
+from collections.abc import Awaitable, Callable
+from typing import Any, Protocol, Self
 
 import aio_pika
 from aio_pika.abc import (
@@ -10,10 +11,18 @@ from aio_pika.abc import (
 )
 
 import echo.events.v1 as events
+from echo.logger import configure_logger
 from echo.worker.registry import HANDLER_REGISTRY
 
+log = configure_logger(__name__)
 
-class QueueWorker:
+
+class Queue(Protocol):
+    async def start(self, callback: Callable[[Any], Awaitable[Any]]) -> None: ...
+    async def stop(self) -> None: ...
+
+
+class RabbitQueue:
     def __init__(
         self,
         conn: AbstractRobustConnection,
@@ -26,7 +35,7 @@ class QueueWorker:
 
     @classmethod
     async def build(cls) -> Self:
-        conn = await QueueWorker.get_queue_connection()
+        conn = await RabbitQueue._get_queue_connection()
         channel = await conn.channel()
         queue = await channel.declare_queue(os.environ["RABBITMQ_CHANNEL"])
         return cls(
@@ -39,17 +48,40 @@ class QueueWorker:
         await self.channel.close()
         await self.conn.close()
 
-    async def start(self) -> None:
-        await self.queue.consume(self.handle_queue_message)
+    async def start(self, callback: Callable[[Any], Awaitable[Any]]) -> None:
+        await self.queue.consume(callback)
 
     @staticmethod
-    async def get_queue_connection() -> AbstractRobustConnection:
+    async def _get_queue_connection() -> AbstractRobustConnection:
         return await aio_pika.connect_robust(
             host=os.environ["RABBITMQ_HOST"],
             port=int(os.environ["RABBITMQ_PORT"]),
             login=os.environ["RABBITMQ_USER"],
             password=os.environ["RABBITMQ_PASSWORD"],
         )
+
+    async def send_event(self, event: events.SessionEvent) -> None:
+        message = aio_pika.Message(
+            body=event.model_dump_json().encode(),
+            delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
+            content_type="application/json",
+        )
+
+        await self.channel.default_exchange.publish(
+            message,
+            routing_key=self.queue.name,
+        )
+
+
+class QueueWorker:
+    def __init__(self, queue: Queue) -> None:
+        self.queue = queue
+
+    async def start(self) -> None:
+        await self.queue.start(self.handle_queue_message)
+
+    async def stop(self) -> None:
+        await self.queue.stop()
 
     @staticmethod
     async def handle_queue_message(msg: AbstractIncomingMessage) -> None:
@@ -60,4 +92,5 @@ class QueueWorker:
     @staticmethod
     async def handle_event(event: events.SessionEvent) -> None:
         for handler in HANDLER_REGISTRY.get(type(event), []):
+            log.info(f"handler: {handler.__name__}, event: {event}")
             await handler(event)

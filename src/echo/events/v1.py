@@ -44,7 +44,8 @@ class SessionEnded(SessionEvent):
 class StartSessionRequest(SessionEvent):
     type: Literal["start_session_request"] = Field(default="start_session_request", frozen=True)
     room_id: str
-    report_url: str
+    phone_number: str
+    participant_name: str
 
 
 SessionEventDiscriminator = Annotated[
@@ -52,7 +53,8 @@ SessionEventDiscriminator = Annotated[
     Field(discriminator="type"),
 ]
 
-SessionEventAdapter = TypeAdapter(SessionEventDiscriminator)
+
+SessionEventAdapter = TypeAdapter[SessionEvent](SessionEventDiscriminator)
 
 
 def deserialize_event(body: bytes) -> SessionEventDiscriminator:

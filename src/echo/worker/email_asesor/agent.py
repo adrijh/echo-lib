@@ -1,7 +1,7 @@
 from typing import Any
 
 from langgraph.graph import END, StateGraph
-from langgraph.graph.compiled import CompiledStateGraph
+from langgraph.graph.state import CompiledStateGraph
 
 from echo.logger import configure_logger
 from echo.worker.email_asesor.nodes import (
@@ -14,8 +14,7 @@ from echo.worker.email_asesor.state import SummaryState
 logger = configure_logger(__name__)
 
 
-def build_agent(checkpointer: Any) -> CompiledStateGraph:
-    logger.info("Building StateGraph...")
+def build_agent(checkpointer: Any) -> CompiledStateGraph[Any, Any, Any, Any]:
     workflow = StateGraph(SummaryState)
 
     workflow.add_node("load_transcription", load_transcription)

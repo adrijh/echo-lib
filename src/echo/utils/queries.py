@@ -16,8 +16,8 @@ ATTACH_POSTGRES_SQL = "ATTACH '' AS postgres (TYPE postgres);"
 
 CREATE_ROOMS_TABLE_SQL = dedent("""
     CREATE TABLE IF NOT EXISTS {table_name} (
-        room_id          UUID PRIMARY KEY,
-        opportunity_id   UUID NOT NULL,
+        room_id          TEXT PRIMARY KEY,
+        opportunity_id   TEXT NOT NULL,
         start_timestamp  TIMESTAMPTZ,
         end_timestamp    TIMESTAMPTZ,
         report_url       TEXT
