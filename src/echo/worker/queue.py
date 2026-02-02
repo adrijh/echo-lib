@@ -39,7 +39,6 @@ class QueueWorker:
         await self.channel.close()
         await self.conn.close()
 
-
     async def start(self) -> None:
         await self.queue.consume(self.handle_queue_message)
 

@@ -44,7 +44,6 @@ class SessionEnded(SessionEvent):
         default="session_ended", frozen=True
     )
     report_url: str
-    report: bytes
 
 class StartSessionRequest(SessionEvent):
     type: Literal["start_session_request"] = Field(

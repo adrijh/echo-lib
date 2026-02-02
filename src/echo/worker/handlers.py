@@ -13,7 +13,8 @@ async def set_session_ended(event: events.SessionEnded) -> None:
 
 
 @register_handler(events.SessionEnded)
-async def upload_session_manifest(event: events.SessionEnded) -> None:
+async def create_session_summary(event: events.SessionEnded) -> None:
+    # Parte de alfonso
     pass
 
 

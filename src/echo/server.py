@@ -5,7 +5,6 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
 from echo.worker.queue import QueueWorker
-from echo.utils import duckdb
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncGenerator[None]:
