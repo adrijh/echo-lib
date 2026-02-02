@@ -1,4 +1,5 @@
-from uuid import uuid4
+from datetime import timedelta
+from uuid import UUID, uuid4
 
 import pytest
 
@@ -11,11 +12,7 @@ def db() -> Store:
     return DuckDBStore.in_memory()
 
 
-ROOM_ID = str(uuid4())
-OPPORTUNITY_ID = str(uuid4())
-
-
-def test_end_room(db: Store) -> None:
+def test_room_start(db: Store) -> None:
     room_id = str(uuid4())
     opportunity_id = str(uuid4())
 
@@ -30,15 +27,52 @@ def test_end_room(db: Store) -> None:
         start_time=start_event.timestamp,
     )
 
+    rows = db.get_rooms()
+
+    assert len(rows) == 1
+    assert rows[0].room_id == UUID(start_event.room_id)
+    assert rows[0].opportunity_id == UUID(start_event.opportunity_id)
+    assert rows[0].start_time == start_event.timestamp
+
+
+def test_room_start_end(db: Store) -> None:
+    room_id = str(uuid4())
+    opportunity_id = str(uuid4())
+
+    start_event = events.SessionStarted(
+        room_id=room_id,
+        opportunity_id=opportunity_id,
+    )
+    end_time = start_event.timestamp + timedelta(minutes=5)
+    report_url = "test"
     end_event = events.SessionEnded(
         room_id=room_id,
         opportunity_id=opportunity_id,
-        report_url="https://test.json",
+        timestamp=end_time,
+        report_url=report_url,
+    )
+
+    db.set_room_start(
+        room_id=start_event.room_id,
+        opportunity_id=start_event.opportunity_id,
+        start_time=start_event.timestamp,
     )
 
     db.set_room_end(
-        room_id=start_event.room_id,
-        end_time=start_event.timestamp,
+        room_id=end_event.room_id,
+        end_time=end_event.timestamp,
     )
 
-    db.set_room_report(room_id=room_id, report_url=end_event.report_url)
+    db.set_room_report(
+        room_id=end_event.room_id,
+        report_url=end_event.report_url,
+    )
+
+    rows = db.get_rooms()
+
+    assert len(rows) == 1
+    assert rows[0].room_id == UUID(end_event.room_id)
+    assert rows[0].opportunity_id == UUID(end_event.opportunity_id)
+    assert rows[0].start_time == start_event.timestamp
+    assert rows[0].end_time == end_event.timestamp
+    assert rows[0].report_url == end_event.report_url

@@ -1,19 +1,26 @@
 from datetime import datetime
-from typing import Any, Protocol, Self
+from typing import NamedTuple, Protocol, Self
 from uuid import UUID
 
 import duckdb
 
 from echo.utils import queries as q
 
-type StoreRow = tuple[UUID, UUID, datetime, datetime | None, str | None]
+
+class StoreRow(NamedTuple):
+    room_id: UUID
+    opportunity_id: UUID
+    start_time: datetime
+    end_time: datetime
+    report_url: datetime
+
 
 
 class Store(Protocol):
     def set_room_start(self, room_id: str, opportunity_id: str, start_time: datetime) -> None: ...
     def set_room_end(self, room_id: str, end_time: datetime) -> None: ...
     def set_room_report(self, room_id: str, report_url: str) -> None: ...
-    def get_rooms(self) -> list[tuple[Any]]: ...
+    def get_rooms(self) -> list[StoreRow]: ...
 
 
 class DuckDBStore:
@@ -85,5 +92,6 @@ class DuckDBStore:
             ),
         )
 
-    def get_rooms(self) -> list[tuple[Any]]:
-        return self.conn.sql(q.LIST_ROOMS_SQL.format(table_name=self.table_name)).fetchall()
+    def get_rooms(self) -> list[StoreRow]:
+        data = self.conn.sql(q.LIST_ROOMS_SQL.format(table_name=self.table_name)).fetchall()
+        return [StoreRow(*(elem)) for elem in data]
