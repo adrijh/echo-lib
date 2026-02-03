@@ -21,7 +21,7 @@ if __name__ == "__main__":
     event = events.StartSessionRequest(
         room_id=str(uuid4()),
         opportunity_id=str(uuid4()),
-        phone_number="+34665886861",
+        phone_number="+34661220613",
         participant_name="Lukitas",
     )
     asyncio.run(send_event(event))

@@ -2,7 +2,8 @@ import asyncio
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from echo.logger import configure_logger
@@ -25,6 +26,14 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None]:
 
 
 app = FastAPI(lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/health", tags=["health"])
@@ -51,11 +60,38 @@ async def start_session() -> JSONResponse:
     )
 
 
-@app.websocket("/ws")
+@app.websocket("/")
 async def websocket_endpoint(websocket: WebSocket) -> None:
     await websocket.accept()
-    while True:
-        # data = await websocket.receive_text()
-        rooms = db.get_rooms()
-        await websocket.send_json({"rooms": rooms})
-        await asyncio.sleep(WS_REFRESH_TIME_SECONDS)
+    log.info("WebSocket client connected")
+
+    try:
+        while True:
+            rooms = db.get_rooms()
+            await websocket.send_json({"rooms": [room.model_dump_json() for room in rooms]})
+            await asyncio.sleep(WS_REFRESH_TIME_SECONDS)
+    except WebSocketDisconnect:
+        log.info("WebSocket client disconnected normally")
+    except Exception as e:
+        log.error(f"WebSocket error: {e}")
+
+# @app.websocket("/ws")
+# async def websocket_endpoint(websocket: WebSocket) -> None:
+#     await websocket.accept()
+#     log.info("WebSocket client connected")
+#
+#     try:
+#         while True:
+#             rooms = db.get_rooms()
+#             await websocket.send_json({"rooms": [room.model_dump_json() for room in rooms]})
+#             await asyncio.sleep(WS_REFRESH_TIME_SECONDS)
+#     except WebSocketDisconnect:
+#         log.info("WebSocket client disconnected normally")
+#     except Exception as e:
+#         log.error(f"WebSocket error: {e}")
+#     finally:
+#         log.info("WebSocket connection closed")
+#         try:
+#             await websocket.close()
+#         except Exception as e:
+#             log.error(f"Error closing websocket connection {e}")
