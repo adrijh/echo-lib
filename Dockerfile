@@ -6,4 +6,4 @@ COPY . .
 
 RUN pip install .
 
-CMD ["fastapi", "run", "src/echo/server.py", "--port", "8000"]
+CMD ["fastapi", "run", "src/echo/server.py", "--port", "8080"]

@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: echo-server
-          image: proeducalivekitacr.azurecr.io/echo-server:0.0.3
+          image: proeducalivekitacr.azurecr.io/echo-server:0.0.4
           imagePullPolicy: IfNotPresent
           envFrom:
             - secretRef:
@@ -60,7 +60,7 @@ spec:
               value: sessions
 
           ports:
-            - containerPort: 8000
+            - containerPort: 8080
           resources:
             requests:
               cpu: "100m"
@@ -68,13 +68,13 @@ spec:
           readinessProbe:
             httpGet:
               path: /health
-              port: 8000
+              port: 8080
             initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /health
-              port: 8000
+              port: 8080
             initialDelaySeconds: 10
             periodSeconds: 20
 ---
@@ -89,5 +89,5 @@ spec:
     app: echo-server
   ports:
     - protocol: TCP
-      port: 80
-      targetPort: 8000
+      port: 8080
+      targetPort: 8080
