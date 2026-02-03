@@ -37,7 +37,7 @@ class RabbitQueue:
     async def build(cls) -> Self:
         conn = await RabbitQueue._get_queue_connection()
         channel = await conn.channel()
-        queue = await channel.declare_queue(os.environ["RABBITMQ_CHANNEL"])
+        queue = await channel.declare_queue(os.environ["RABBITMQ_CHANNEL"], durable=True)
         return cls(
             conn=conn,
             channel=channel,

@@ -6,6 +6,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+import echo.events.v1 as events
 from echo.logger import configure_logger
 from echo.utils import db
 from echo.worker.queue import QueueWorker, RabbitQueue
@@ -53,10 +54,13 @@ async def list_sessions() -> JSONResponse:
 
 
 @app.post("/sessions")
-async def start_session() -> JSONResponse:
+async def start_session(data: events.StartSessionRequest) -> JSONResponse:
+    queue = await RabbitQueue.build()
+    await queue.send_event(data)
+    await queue.stop()
     return JSONResponse(
         status_code=200,
-        content=[],
+        content={"message": "Queued Event"},
     )
 
 
