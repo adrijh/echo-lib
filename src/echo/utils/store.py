@@ -1,18 +1,25 @@
 from datetime import datetime
-from typing import NamedTuple, Protocol, Self
-from uuid import UUID
+from typing import Protocol, Self
 
 import duckdb
+from pydantic import BaseModel, field_serializer
 
 from echo.utils import queries as q
 
 
-class StoreRow(NamedTuple):
-    room_id: UUID
-    opportunity_id: UUID
+class StoreRow(BaseModel):
+    room_id: str
+    opportunity_id: str
     start_time: datetime
-    end_time: datetime
-    report_url: datetime
+    end_time: datetime | None
+    report_url: str | None
+
+    @field_serializer("start_time", "end_time")
+    def serialize_unix_ts(self, v: datetime | None) -> float | None:
+        if v is None:
+            return None
+        return v.timestamp()
+
 
 
 class Store(Protocol):
@@ -93,4 +100,13 @@ class DuckDBStore:
 
     def get_rooms(self) -> list[StoreRow]:
         data = self.conn.sql(q.LIST_ROOMS_SQL.format(table_name=self.table_name)).fetchall()
-        return [StoreRow(*(elem)) for elem in data]
+        return [
+            StoreRow(
+                room_id=elem[0],
+                opportunity_id=elem[1],
+                start_time=elem[2],
+                end_time=elem[3],
+                report_url=elem[4],
+            )
+            for elem in data
+        ]
