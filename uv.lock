@@ -464,6 +464,7 @@ dependencies = [
     { name = "pydantic" },
     { name = "pytz" },
     { name = "sendgrid" },
+    { name = "websockets" },
 ]
 
 [package.dev-dependencies]
@@ -489,6 +490,7 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.12.5" },
     { name = "pytz", specifier = ">=2025.2" },
     { name = "sendgrid", specifier = ">=6.12.5" },
+    { name = "websockets", specifier = ">=16.0" },
 ]
 
 [package.metadata.requires-dev]

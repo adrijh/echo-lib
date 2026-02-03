@@ -5,19 +5,16 @@ from livekit.protocol.sip import CreateSIPParticipantRequest
 import echo.config as cfg
 import echo.events.v1 as events
 from echo.logger import configure_logger
-from echo.utils.store import DuckDBStore
+from echo.utils import db
 from echo.worker.email_asesor.main import run_email_asesor_workflow
 from echo.worker.registry import register_handler
 
 log = configure_logger(__name__)
 
 
-store = DuckDBStore.with_postgres()
-
-
 @register_handler(events.SessionStarted)
 async def set_session_start(event: events.SessionStarted) -> None:
-    store.set_room_start(
+    db.set_room_start(
         room_id=event.room_id,
         opportunity_id=event.opportunity_id,
         start_time=event.timestamp,
@@ -26,14 +23,14 @@ async def set_session_start(event: events.SessionStarted) -> None:
 
 @register_handler(events.SessionEnded)
 async def set_session_ended(event: events.SessionEnded) -> None:
-    store.set_room_end(
+    db.set_room_end(
         room_id=event.room_id,
         end_time=event.timestamp,
     )
 
 @register_handler(events.SessionEnded)
 async def set_session_url(event: events.SessionEnded) -> None:
-    store.set_room_report(
+    db.set_room_report(
         room_id=event.room_id,
         report_url=event.report_url,
     )

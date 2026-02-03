@@ -20,6 +20,7 @@ dependencies = [
     "pydantic>=2.12.5",
     "pytz>=2025.2",
     "sendgrid>=6.12.5",
+    "websockets>=16.0",
 ]
 
 [build-system]
