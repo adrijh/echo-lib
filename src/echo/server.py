@@ -1,13 +1,17 @@
 import asyncio
+import json
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from io import BytesIO
 
-from fastapi import APIRouter, FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
+from echo import config as cfg
 from echo.logger import configure_logger
 from echo.utils import db
+from echo.utils.storage import get_blob_content
 from echo.worker.queue import QueueWorker, RabbitQueue
 
 log = configure_logger(__name__)
@@ -45,11 +49,35 @@ def healthcheck() -> JSONResponse:
     )
 
 
-@api.get("/sessions")
-async def list_sessions() -> JSONResponse:
+@api.get("/report/{room_id}")
+async def get_room_report(room_id: str) -> JSONResponse:
+    blob_url = f"https://{cfg.AZURE_ACCOUNT_NAME}.blob.core.windows.net/{cfg.AZURE_CONTAINER}/recordings/{room_id}/session-report.json"
+    content = await get_blob_content(blob_url)
+
+    if not content:
+        raise HTTPException(status_code=404, detail="Report not found")
+
+    report = json.loads(content.decode("utf-8"))
     return JSONResponse(
         status_code=200,
-        content=[],
+        content=report,
+    )
+
+
+@api.get("/recording/{room_id}")
+async def get_room_recording(room_id: str) -> StreamingResponse:
+    blob_url = f"https://{cfg.AZURE_ACCOUNT_NAME}.blob.core.windows.net/{cfg.AZURE_CONTAINER}/recordings/{room_id}/recording.ogg"
+    content = await get_blob_content(blob_url)
+
+    if not content:
+        raise HTTPException(status_code=404, detail="Recording not found")
+
+    return StreamingResponse(
+        BytesIO(content),
+        media_type="audio/ogg",
+        headers={
+            "Content-Disposition": "inline; filename=recording.ogg"
+        },
     )
 
 
