@@ -20,12 +20,15 @@ async def load_transcription(state: SummaryState) -> dict[str, Any]:
         raise ValueError("session_blob is missing")
 
     logger.debug(f"Node 1: Preparing context for Room {room_id}")
-
     content = await get_blob_content(blob_url)
 
-    logger.debug(f"Transcription loaded ({len(content)} chars): {content[:50]}...")
+    if not content:
+        raise RuntimeError("Transcription not found")
 
-    return {"transcription": content}
+    transcription = content.decode("utf-8")
+    logger.debug(f"Transcription loaded ({len(content)} chars): {transcription[:50]}...")
+
+    return {"transcription": transcription}
 
 
 async def generate_summary(state: SummaryState) -> dict[str, Any]:
@@ -69,7 +72,7 @@ async def send_email(state: SummaryState) -> dict[str, Any]:
             subject=f"Meeting Summary: Room {room_id}",
             email_to=email_to,
             content_markdown=summary_markdown,
-            attachment_content=raw_text,  # This adds the .txt file
+            attachment_content=raw_text,
         )
 
     return {}
