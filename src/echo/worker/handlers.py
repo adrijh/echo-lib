@@ -1,15 +1,14 @@
-from livekit import api
-from livekit.protocol.egress import AzureBlobUpload, EncodedFileOutput, RoomCompositeEgressRequest
-from livekit.protocol.sip import CreateSIPParticipantRequest
+import asyncio
 
-import echo.config as cfg
 import echo.events.v1 as events
 from echo.logger import configure_logger
+from echo.services.sip import SipService
 from echo.utils import db
 from echo.worker.email_asesor.main import run_email_asesor_workflow
 from echo.worker.registry import register_handler
 
 log = configure_logger(__name__)
+background_tasks: set[asyncio.Task[None]] = set()
 
 
 @register_handler(events.SessionStarted)
@@ -35,7 +34,6 @@ async def set_session_url(event: events.SessionEnded) -> None:
         report_url=event.report_url,
     )
 
-
 @register_handler(events.SessionEnded)
 async def create_session_summary(event: events.SessionEnded) -> None:
     event_payload = {
@@ -45,55 +43,26 @@ async def create_session_summary(event: events.SessionEnded) -> None:
 
     await run_email_asesor_workflow(event_payload)
 
-
 @register_handler(events.StartSessionRequest)
 async def start_call(event: events.StartSessionRequest) -> None:
-    log.info("Handler triggered for StartSessionRequest")
-    livekit_api = api.LiveKitAPI(
-        url=cfg.LIVEKIT_URL,
-        api_key=cfg.LIVEKIT_API_KEY,
-        api_secret=cfg.LIVEKIT_API_SECRET,
-    )
-
+    service = SipService()
     room_name = f"room-{event.room_id}"
+
     try:
-        sip_request = CreateSIPParticipantRequest(
-            sip_trunk_id=cfg.SIP_TRUNK_ID,
-            sip_number=cfg.SIP_NUMBER,
-            sip_call_to=event.phone_number,
-            room_name=room_name,
-            participant_identity=f"sip-{event.opportunity_id}",
-            participant_name=event.participant_name,
-            krisp_enabled=True,
-            wait_until_answered=True,
-        )
+        ai_number = await service.allocate_resources(event.phone_number)
 
-        sip_participant = await livekit_api.sip.create_sip_participant(sip_request)
+        if not ai_number:
+            log.error("Timeout waiting for resources. Discarding.")
+            return
 
-        log.info(f"SIP participant created: {sip_participant.participant_id}")
+        room_name = await service.create_room_for_call(event, ai_number)
 
-        egress_request = RoomCompositeEgressRequest(
-            room_name=room_name,
-            audio_only=True,
-            audio_mixing="DEFAULT_MIXING",
-            file_outputs=[
-                EncodedFileOutput(
-                    filepath=(f"recordings/{event.room_id}/recording.ogg"),
-                    azure=AzureBlobUpload(
-                        account_name=cfg.AZURE_ACCOUNT_NAME,
-                        account_key=cfg.AZURE_ACCOUNT_KEY,
-                        container_name=cfg.AZURE_CONTAINER,
-                    ),
-                )
-            ],
-        )
-
-        egress_info = await livekit_api.egress.start_room_composite_egress(egress_request)
-
-        log.info(f"Egress started: {egress_info.egress_id}")
+        task = asyncio.create_task(SipService.run_background_call(room_name, event, ai_number))
+        background_tasks.add(task)
+        task.add_done_callback(background_tasks.discard)
 
     except Exception as e:
-        log.info("Error during start_call:", e)
-
+        log.error(f"Error during reservation phase: {e}")
+        await service.cleanup_room(room_name)
     finally:
-        await livekit_api.aclose()  # type: ignore[no-untyped-call]
+        await service.close()

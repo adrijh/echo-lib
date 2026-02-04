@@ -8,6 +8,7 @@ from fastapi import APIRouter, FastAPI, HTTPException, WebSocket, WebSocketDisco
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 
+import echo.events.v1 as events
 from echo import config as cfg
 from echo.logger import configure_logger
 from echo.utils import db
@@ -82,10 +83,19 @@ async def get_room_recording(room_id: str) -> StreamingResponse:
 
 
 @api.post("/sessions")
-async def start_session() -> JSONResponse:
+async def start_session(data: events.StartSessionRequest | list[events.StartSessionRequest]) -> JSONResponse:
+    queue = await RabbitQueue.build()
+    if isinstance(data, list):
+        for event in data:
+            await queue.send_event(event)
+        msg_response = f"Session start requested for {len(data)} rooms"
+    else:
+        await queue.send_event(data)
+        msg_response = f"Session start requested for room_id: {data.room_id}"
+    await queue.stop()
     return JSONResponse(
         status_code=200,
-        content=[],
+        content={"message": msg_response},
     )
 
 
