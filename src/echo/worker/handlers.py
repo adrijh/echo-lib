@@ -78,7 +78,7 @@ async def start_call(event: events.StartSessionRequest) -> None:
             audio_mixing="DEFAULT_MIXING",
             file_outputs=[
                 EncodedFileOutput(
-                    filepath=(f"recordings/" f"{event.room_id}-{room_name}-{{time}}.ogg"),
+                    filepath=(f"recordings/{event.room_id}/recording.ogg"),
                     azure=AzureBlobUpload(
                         account_name=cfg.AZURE_ACCOUNT_NAME,
                         account_key=cfg.AZURE_ACCOUNT_KEY,
