@@ -54,13 +54,20 @@ async def list_sessions() -> JSONResponse:
 
 
 @app.post("/sessions")
-async def start_session(data: events.StartSessionRequest) -> JSONResponse:
+async def start_session(data: events.StartSessionRequest | list[events.StartSessionRequest]) -> JSONResponse:
+    print(data)
     queue = await RabbitQueue.build()
-    await queue.send_event(data)
+    if isinstance(data, list):
+        for event in data:
+            await queue.send_event(event)
+        msg_response = f"Session start requested for {len(data)} rooms"
+    else:
+        await queue.send_event(data)
+        msg_response = f"Session start requested for room_id: {data.room_id}"
     await queue.stop()
     return JSONResponse(
         status_code=200,
-        content={"message": "Queued Event"},
+        content={"message": msg_response},
     )
 
 
