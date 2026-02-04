@@ -1,3 +1,5 @@
+import json
+
 from livekit import api
 from livekit.protocol.egress import AzureBlobUpload, EncodedFileOutput, RoomCompositeEgressRequest
 from livekit.protocol.sip import CreateSIPParticipantRequest
@@ -68,7 +70,21 @@ async def start_call(event: events.StartSessionRequest) -> None:
             wait_until_answered=True,
         )
 
+
         sip_participant = await livekit_api.sip.create_sip_participant(sip_request)
+        meta_payload = json.dumps({
+            "ai_phone": cfg.SIP_NUMBER,
+            "opportunity_id": event.opportunity_id,
+            "user_phone": event.phone_number,
+            "user_name": event.participant_name,
+            "created_at": event.timestamp.isoformat()
+        })
+        await livekit_api.room.update_room_metadata(
+            api.UpdateRoomMetadataRequest(
+                room=room_name,
+                metadata=meta_payload
+            )
+        )
 
         log.info(f"SIP participant created: {sip_participant.participant_id}")
 
@@ -91,9 +107,10 @@ async def start_call(event: events.StartSessionRequest) -> None:
         egress_info = await livekit_api.egress.start_room_composite_egress(egress_request)
 
         log.info(f"Egress started: {egress_info.egress_id}")
-
+        rooms_list = await livekit_api.room.list_rooms(api.ListRoomsRequest())
+        print(rooms_list)
     except Exception as e:
-        log.info("Error during start_call:", e)
+        log.error(f"Error during start_call: {e}", exc_info=True)
 
     finally:
         await livekit_api.aclose()  # type: ignore[no-untyped-call]
