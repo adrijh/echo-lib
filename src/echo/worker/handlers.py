@@ -1,17 +1,14 @@
-import json
+import asyncio
 
-from livekit import api
-from livekit.protocol.egress import AzureBlobUpload, EncodedFileOutput, RoomCompositeEgressRequest
-from livekit.protocol.sip import CreateSIPParticipantRequest
-
-import echo.config as cfg
 import echo.events.v1 as events
 from echo.logger import configure_logger
+from echo.services.sip import SipService
 from echo.utils import db
 from echo.worker.email_asesor.main import run_email_asesor_workflow
 from echo.worker.registry import register_handler
 
 log = configure_logger(__name__)
+background_tasks: set[asyncio.Task[None]] = set()
 
 
 @register_handler(events.SessionStarted)
@@ -50,67 +47,28 @@ async def create_session_summary(event: events.SessionEnded) -> None:
 
 @register_handler(events.StartSessionRequest)
 async def start_call(event: events.StartSessionRequest) -> None:
-    log.info("Handler triggered for StartSessionRequest")
-    livekit_api = api.LiveKitAPI(
-        url=cfg.LIVEKIT_URL,
-        api_key=cfg.LIVEKIT_API_KEY,
-        api_secret=cfg.LIVEKIT_API_SECRET,
-    )
+    log.info(f"[Handler] Received event for {event.phone_number}")
 
+    service = SipService()
     room_name = f"room-{event.room_id}"
+
     try:
-        sip_request = CreateSIPParticipantRequest(
-            sip_trunk_id=cfg.SIP_TRUNK_ID,
-            sip_number=cfg.SIP_NUMBER,
-            sip_call_to=event.phone_number,
-            room_name=room_name,
-            participant_identity=f"sip-{event.opportunity_id}",
-            participant_name=event.participant_name,
-            krisp_enabled=True,
-            wait_until_answered=True,
-        )
+        can_proceed = await service.wait_until_line_free(event.phone_number)
 
+        if not can_proceed:
+            log.error("[Handler] Timeout waiting for free line. Discarding.")
+            return
 
-        sip_participant = await livekit_api.sip.create_sip_participant(sip_request)
-        meta_payload = json.dumps({
-            "ai_phone": cfg.SIP_NUMBER,
-            "opportunity_id": event.opportunity_id,
-            "user_phone": event.phone_number,
-            "user_name": event.participant_name,
-            "created_at": event.timestamp.isoformat()
-        })
-        await livekit_api.room.update_room_metadata(
-            api.UpdateRoomMetadataRequest(
-                room=room_name,
-                metadata=meta_payload
-            )
-        )
+        room_name = await service.create_room_for_call(event)
 
-        log.info(f"SIP participant created: {sip_participant.participant_id}")
+        task = asyncio.create_task(SipService.run_background_call(room_name, event))
+        background_tasks.add(task)
+        task.add_done_callback(background_tasks.discard)
 
-        egress_request = RoomCompositeEgressRequest(
-            room_name=room_name,
-            audio_only=True,
-            audio_mixing="DEFAULT_MIXING",
-            file_outputs=[
-                EncodedFileOutput(
-                    filepath=(f"recordings/" f"{event.room_id}-{room_name}-{{time}}.ogg"),
-                    azure=AzureBlobUpload(
-                        account_name=cfg.AZURE_ACCOUNT_NAME,
-                        account_key=cfg.AZURE_ACCOUNT_KEY,
-                        container_name=cfg.AZURE_CONTAINER,
-                    ),
-                )
-            ],
-        )
+        log.info("[Handler] Room reserved. Releasing RabbitMQ worker for next event.")
 
-        egress_info = await livekit_api.egress.start_room_composite_egress(egress_request)
-
-        log.info(f"Egress started: {egress_info.egress_id}")
-        rooms_list = await livekit_api.room.list_rooms(api.ListRoomsRequest())
-        print(rooms_list)
     except Exception as e:
-        log.error(f"Error during start_call: {e}", exc_info=True)
-
+        log.error(f"Error during reservation phase: {e}")
+        await service.cleanup_room(room_name)
     finally:
-        await livekit_api.aclose()  # type: ignore[no-untyped-call]
+        await service.close()

@@ -56,7 +56,6 @@ async def list_sessions() -> JSONResponse:
 
 @api.post("/sessions")
 async def start_session(data: events.StartSessionRequest | list[events.StartSessionRequest]) -> JSONResponse:
-    print(data)
     queue = await RabbitQueue.build()
     if isinstance(data, list):
         for event in data:
