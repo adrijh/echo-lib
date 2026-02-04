@@ -48,5 +48,5 @@ SELECT
     end_timestamp,
     report_url
 FROM {table_name}
-ORDER BY start_timestamp ASC NULLS LAST;
+ORDER BY start_timestamp DESC NULLS LAST;
 """)

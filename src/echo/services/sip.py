@@ -126,7 +126,7 @@ class SipService:
             audio_mixing="DEFAULT_MIXING",
             file_outputs=[
                 EncodedFileOutput(
-                    filepath=(f"recordings/" f"{room_id}-{room_name}-{{time}}.ogg"),
+                    filepath=(f"recordings/{room_id}/recording.ogg"),
                     azure=AzureBlobUpload(
                         account_name=cfg.AZURE_ACCOUNT_NAME,
                         account_key=cfg.AZURE_ACCOUNT_KEY,
