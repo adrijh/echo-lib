@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: echo-server
-          image: proeducalivekitacr.azurecr.io/echo-server:0.0.4
+          image: proeducalivekitacr.azurecr.io/echo-server:0.0.7
           imagePullPolicy: IfNotPresent
           envFrom:
             - secretRef:
@@ -67,13 +67,13 @@ spec:
               memory: "128Mi"
           readinessProbe:
             httpGet:
-              path: /health
+              path: /api/health
               port: 8080
             initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
             httpGet:
-              path: /health
+              path: /api/health
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 20
@@ -82,7 +82,7 @@ apiVersion: v1
 kind: Service
 metadata:
   namespace: livekit
-  name: echo-server-service
+  name: echo-server
 spec:
   type: ClusterIP
   selector:
@@ -91,3 +91,30 @@ spec:
     - protocol: TCP
       port: 8080
       targetPort: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  namespace: livekit
+  name: echo-server-ingress
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+      - panel.ajimenezh.com
+    secretName: echo-server-tls
+  rules:
+  - host: panel.ajimenezh.com
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: echo-server
+            port:
+              number: 8080
+
