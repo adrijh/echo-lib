@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: echo-server
-          image: proeducalivekitacr.azurecr.io/echo-server:0.0.10
+          image: proeducalivekitacr.azurecr.io/echo-server:0.0.12
           imagePullPolicy: IfNotPresent
           envFrom:
             - secretRef:
@@ -58,6 +58,12 @@ spec:
               value: 10.224.0.5
             - name: AZURE_CONTAINER
               value: sessions
+            - name: SIP_CALL_MAX_RETRIES
+              value: "60"
+            - name: SIP_CALL_WAIT_SECONDS
+              value: "10"
+            - name: SIP_MAX_CONCURRENT_CALLS
+              value: "1"
 
           ports:
             - containerPort: 8080

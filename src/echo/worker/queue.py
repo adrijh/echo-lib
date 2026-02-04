@@ -39,7 +39,7 @@ class RabbitQueue:
         channel = await conn.channel()
         await channel.set_qos(prefetch_count=1)
 
-        queue = await channel.declare_queue(os.environ["RABBITMQ_CHANNEL"], durable=True)
+        queue = await channel.declare_queue(os.environ["RABBITMQ_CHANNEL"], durable=False)
         return cls(
             conn=conn,
             channel=channel,
