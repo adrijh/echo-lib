@@ -2,7 +2,10 @@ import os
 
 # SIP Trunk
 SIP_TRUNK_ID = os.environ["SIP_TRUNK_ID"]
-SIP_NUMBER = os.environ["SIP_NUMBER"]
+SIP_NUMBER = os.environ["SIP_NUMBER"].split(",")
+SIP_CALL_MAX_RETRIES = int(os.getenv("SIP_CALL_MAX_RETRIES", "10"))
+SIP_CALL_WAIT_SECONDS = int(os.getenv("SIP_CALL_WAIT_SECONDS", "30"))
+SIP_MAX_CONCURRENT_CALLS = int(os.getenv("SIP_MAX_CONCURRENT_CALLS", "1"))
 
 # Azure
 AZURE_ACCOUNT_NAME = os.environ["AZURE_ACCOUNT_NAME"]

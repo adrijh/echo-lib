@@ -34,7 +34,6 @@ async def set_session_url(event: events.SessionEnded) -> None:
         report_url=event.report_url,
     )
 
-
 @register_handler(events.SessionEnded)
 async def create_session_summary(event: events.SessionEnded) -> None:
     event_payload = {
@@ -44,28 +43,23 @@ async def create_session_summary(event: events.SessionEnded) -> None:
 
     await run_email_asesor_workflow(event_payload)
 
-
 @register_handler(events.StartSessionRequest)
 async def start_call(event: events.StartSessionRequest) -> None:
-    log.info(f"[Handler] Received event for {event.phone_number}")
-
     service = SipService()
     room_name = f"room-{event.room_id}"
 
     try:
-        can_proceed = await service.wait_until_line_free(event.phone_number)
+        ai_number = await service.allocate_resources(event.phone_number)
 
-        if not can_proceed:
-            log.error("[Handler] Timeout waiting for free line. Discarding.")
+        if not ai_number:
+            log.error("Timeout waiting for resources. Discarding.")
             return
 
-        room_name = await service.create_room_for_call(event)
+        room_name = await service.create_room_for_call(event, ai_number)
 
-        task = asyncio.create_task(SipService.run_background_call(room_name, event))
+        task = asyncio.create_task(SipService.run_background_call(room_name, event, ai_number))
         background_tasks.add(task)
         task.add_done_callback(background_tasks.discard)
-
-        log.info("[Handler] Room reserved. Releasing RabbitMQ worker for next event.")
 
     except Exception as e:
         log.error(f"Error during reservation phase: {e}")
