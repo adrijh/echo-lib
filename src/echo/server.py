@@ -55,7 +55,7 @@ async def get_room_report(room_id: str) -> JSONResponse:
     content = await get_blob_content(blob_url)
 
     if not content:
-        raise HTTPException(status_code=404, detail="Report not found")
+        raise HTTPException(status_code=204, detail="Report not found")
 
     report = json.loads(content.decode("utf-8"))
     return JSONResponse(
@@ -70,7 +70,7 @@ async def get_room_recording(room_id: str) -> StreamingResponse:
     content = await get_blob_content(blob_url)
 
     if not content:
-        raise HTTPException(status_code=404, detail="Recording not found")
+        raise HTTPException(status_code=204, detail="Recording not found")
 
     return StreamingResponse(
         BytesIO(content),

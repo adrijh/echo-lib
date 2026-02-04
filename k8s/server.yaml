@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: echo-server
-          image: proeducalivekitacr.azurecr.io/echo-server:0.0.7
+          image: proeducalivekitacr.azurecr.io/echo-server:0.0.10
           imagePullPolicy: IfNotPresent
           envFrom:
             - secretRef:
