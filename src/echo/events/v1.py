@@ -8,7 +8,6 @@ class SessionEvent(BaseModel):
     version: Literal["v1"] = Field(default="v1", frozen=True)
     timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
     metadata: dict[str, Any] = Field(default_factory=dict)
-    room_id: str
     opportunity_id: str
 
     @field_validator("timestamp", mode="before")
@@ -34,10 +33,12 @@ class SessionEvent(BaseModel):
 
 class SessionStarted(SessionEvent):
     type: Literal["session_started"] = Field(default="session_started", frozen=True)
+    room_id: str
 
 
 class SessionEnded(SessionEvent):
     type: Literal["session_ended"] = Field(default="session_ended", frozen=True)
+    room_id: str
     report_url: str
 
 
