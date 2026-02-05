@@ -8,6 +8,7 @@ from aio_pika.abc import (
     AbstractQueue,
     AbstractRobustConnection,
 )
+from pamqp.commands import Queue as PamQueue
 
 import echo.events.v1 as events
 from echo.logger import configure_logger
@@ -47,6 +48,9 @@ class RabbitQueue:
     async def stop(self) -> None:
         await self.channel.close()
         await self.conn.close()
+
+    async def purge(self) -> PamQueue.PurgeOk:
+        return await self.queue.purge()
 
     async def start(self, callback: Callable[[Any], Awaitable[Any]]) -> None:
         await self.queue.consume(callback)
