@@ -53,6 +53,7 @@ class StartSessionRequest(SessionEvent):
 
 class SendWhatsappTemplate(SessionEvent):
     type: Literal["send_whatsapp_template"] = Field(default="send_whatsapp_template", frozen=True)
+    phone_number: str
 
 
 SessionEventDiscriminator = Annotated[
