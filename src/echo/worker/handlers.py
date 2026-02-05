@@ -55,9 +55,9 @@ async def start_call(event: events.StartSessionRequest) -> None:
             log.error("Timeout waiting for resources. Discarding.")
             return
 
-        room_name = await service.create_room_for_call(event, ai_number)
+        room = await service.create_room_for_call(event, ai_number)
 
-        task = asyncio.create_task(SipService.run_background_call(room_name, event, ai_number))
+        task = asyncio.create_task(SipService.run_background_call(room, event, ai_number))
         background_tasks.add(task)
         task.add_done_callback(background_tasks.discard)
 
