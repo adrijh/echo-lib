@@ -1,5 +1,6 @@
 from datetime import UTC, datetime
 from typing import Annotated, Any, Literal, cast
+from uuid import UUID
 
 from pydantic import BaseModel, Field, TypeAdapter, ValidationError, field_serializer, field_validator
 
@@ -9,6 +10,7 @@ class SessionEvent(BaseModel):
     timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
     metadata: dict[str, Any] = Field(default_factory=dict)
     opportunity_id: str
+    thread_id: UUID
 
     @field_validator("timestamp", mode="before")
     @classmethod
