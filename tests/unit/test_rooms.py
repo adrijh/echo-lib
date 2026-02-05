@@ -1,15 +1,15 @@
 from datetime import timedelta
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 import pytest
 
 import echo.events.v1 as events
-from echo.utils.store import DuckDBStore, Store
+from echo.store.store import DuckDBStore, Store
 
 
 @pytest.fixture
 def db() -> Store:
-    return DuckDBStore.in_memory()
+    return DuckDBStore.in_memory(do_setup=True)
 
 
 def test_room_start(db: Store) -> None:
@@ -21,17 +21,17 @@ def test_room_start(db: Store) -> None:
         opportunity_id=opportunity_id,
     )
 
-    db.set_room_start(
+    db.rooms.set_room_start(
         room_id=start_event.room_id,
         opportunity_id=start_event.opportunity_id,
         start_time=start_event.timestamp,
     )
 
-    rows = db.get_rooms()
+    rows = db.rooms.get_rooms()
 
     assert len(rows) == 1
-    assert rows[0].room_id == UUID(start_event.room_id)
-    assert rows[0].opportunity_id == UUID(start_event.opportunity_id)
+    assert rows[0].room_id == start_event.room_id
+    assert rows[0].opportunity_id == start_event.opportunity_id
     assert rows[0].start_time == start_event.timestamp
 
 
@@ -52,27 +52,27 @@ def test_room_start_end(db: Store) -> None:
         report_url=report_url,
     )
 
-    db.set_room_start(
+    db.rooms.set_room_start(
         room_id=start_event.room_id,
         opportunity_id=start_event.opportunity_id,
         start_time=start_event.timestamp,
     )
 
-    db.set_room_end(
+    db.rooms.set_room_end(
         room_id=end_event.room_id,
         end_time=end_event.timestamp,
     )
 
-    db.set_room_report(
+    db.rooms.set_room_report(
         room_id=end_event.room_id,
         report_url=end_event.report_url,
     )
 
-    rows = db.get_rooms()
+    rows = db.rooms.get_rooms()
 
     assert len(rows) == 1
-    assert rows[0].room_id == UUID(end_event.room_id)
-    assert rows[0].opportunity_id == UUID(end_event.opportunity_id)
+    assert rows[0].room_id == end_event.room_id
+    assert rows[0].opportunity_id == end_event.opportunity_id
     assert rows[0].start_time == start_event.timestamp
     assert rows[0].end_time == end_event.timestamp
     assert rows[0].report_url == end_event.report_url

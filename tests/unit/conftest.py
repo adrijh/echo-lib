@@ -1,7 +1,7 @@
 import os
 
-os.environ["POSTGRES_HOST"] = "test"
-os.environ["POSTGRES_PORT"] = "test"
-os.environ["POSTGRES_DB"] = "test"
-os.environ["POSTGRES_USER"] = "test"
-os.environ["POSTGRES_PASSWORD"] = "test"
+os.environ["POSTGRES_HOST"] = "localhost"
+os.environ["POSTGRES_PORT"] = "5432"
+os.environ["POSTGRES_DB"] = "echo"
+os.environ["POSTGRES_USER"] = "echo"
+os.environ["POSTGRES_PASSWORD"] = "echo"

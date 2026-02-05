@@ -1,13 +1,14 @@
+import os
+
 from azure.storage.blob.aio import BlobClient
 
-from echo import config as cfg
 from echo.logger import configure_logger
 
 log = configure_logger(__name__)
 
 
 async def get_blob_content(blob_url: str) -> bytes | None:
-    async with BlobClient.from_blob_url(blob_url, credential=cfg.AZURE_ACCOUNT_KEY) as client:
+    async with BlobClient.from_blob_url(blob_url, credential=os.environ["AZURE_ACCOUNT_KEY"]) as client:
 
         try:
             stream = await client.download_blob()
