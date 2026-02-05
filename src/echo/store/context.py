@@ -5,6 +5,7 @@ from uuid import UUID, uuid4
 import duckdb
 from pydantic import BaseModel, field_serializer
 
+from echo.context.types import Channel, ContextType
 from echo.store.queries import context as c
 
 
@@ -13,9 +14,9 @@ class ContextRow(BaseModel):
     thread_id: UUID
     opportunity_id: str
     user_id: UUID
-    channel: str
+    channel: Channel
     content: str
-    type: str
+    type: ContextType
     added_timestamp: datetime
     updated_timestamp: datetime
 
@@ -46,9 +47,9 @@ class ContextTable:
         thread_id: UUID,
         opportunity_id: str,
         user_id: UUID,
-        channel: str,
+        channel: Channel,
         content: str,
-        type: str,
+        type: ContextType,
     ) -> None:
         context_id = uuid4()
         self.conn.execute(
@@ -124,8 +125,8 @@ class ContextTable:
         user_id: UUID | None = None,
         opportunity_id: str | None = None,
         max_age: timedelta = timedelta(days=30),
-        types: list[str] | None = None,
-        channels: list[str] | None = None,
+        types: list[ContextType] | None = None,
+        channels: list[Channel] | None = None,
     ) -> list[ContextRow]:
 
         if user_id is None and opportunity_id is None:

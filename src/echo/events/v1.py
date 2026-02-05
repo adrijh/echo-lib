@@ -49,8 +49,12 @@ class StartSessionRequest(SessionEvent):
     participant_name: str
 
 
+class SendWhatsappTemplate(SessionEvent):
+    type: Literal["send_whatsapp_template"] = Field(default="send_whatsapp_template", frozen=True)
+
+
 SessionEventDiscriminator = Annotated[
-    SessionStarted | SessionEnded | StartSessionRequest,
+    SessionStarted | SessionEnded | StartSessionRequest | SendWhatsappTemplate,
     Field(discriminator="type"),
 ]
 

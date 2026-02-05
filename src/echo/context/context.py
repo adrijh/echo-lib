@@ -3,7 +3,7 @@ from datetime import timedelta
 from typing import Self
 from uuid import UUID, uuid4
 
-from echo.context.types import BlobUrl, Chat
+from echo.context.types import BlobUrl, Channel, Chat, ContextType
 from echo.store.context import ContextRow
 from echo.store.store import Store
 from echo.store.users import UserRow
@@ -15,19 +15,19 @@ class UserContext:
         store: Store,
         thread_id: UUID,
         user_data: UserRow,
-        channel: str,
+        channel: Channel,
     ) -> None:
         self.store = store
         self.thread_id = thread_id
         self.user_data = user_data
-        self.channel = channel
+        self.channel: Channel = channel
 
     @classmethod
     def from_opportunity_id(
         cls,
         store: Store,
         opportunity_id: str,
-        channel: str,
+        channel: Channel,
         thread_id: UUID | None = None,
     ) -> Self:
         user_data = store.users.get_user(opportunity_id=opportunity_id)
@@ -51,8 +51,8 @@ class UserContext:
         self,
         *,
         max_age: timedelta = timedelta(days=30),
-        types: list[str] | None = None,
-        channels: list[str] | None = None,
+        types: list[ContextType] | None = None,
+        channels: list[Channel] | None = None,
     ) -> list[ContextRow]:
         return self.store.context.get_context_history(
             opportunity_id=self.user_data.opportunity_id,
@@ -61,15 +61,15 @@ class UserContext:
             channels=channels,
         )
 
-    def add_summary(self, summary: BlobUrl) -> None:
-        content = json.dumps(summary)
+    def add_blob(self, blob: BlobUrl) -> None:
+        content = json.dumps(blob)
 
         self.store.context.create_context(
             thread_id=self.thread_id,
             opportunity_id=self.user_data.opportunity_id,
             user_id=self.user_data.user_id,
             channel=self.channel,
-            type="summary",
+            type="blob",
             content=content,
         )
 
