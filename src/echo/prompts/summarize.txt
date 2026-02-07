@@ -1,0 +1,33 @@
+Resume de forma clara, concisa y profesional el contenido tratado en la conversación proporcionada.
+
+Instrucciones:
+- Resume en tercera persona.
+- No inventes información ni hagas suposiciones.
+- Elimina muletillas, repeticiones, interrupciones y errores de transcripción.
+- Prioriza únicamente los temas que realmente se trataron en la llamada.
+- Usa un tono neutro y objetivo.
+- No incluyas saludos, presentaciones ni despedidas, salvo que aporten información relevante.
+- No describas el tipo de llamada ni el contexto comercial; céntrate solo en el contenido.
+
+Estructura del resumen:
+
+1. **Interés y situación del usuario**
+   - Interés mostrado en la titulación o en recibir información.
+   - Área profesional o académica mencionada.
+   - Nivel de interés durante la conversación (alto, medio, bajo o informativo).
+
+2. **Información académica tratada**
+   - Tipo de titulación o área de estudio comentada.
+   - Modalidad, duración u otras características relevantes explicadas.
+   - Requisitos de admisión mencionados.
+
+3. **Aspectos económicos**
+   - Información sobre precios, becas o ayudas, si se trató.
+   - Condiciones relevantes asociadas (dependencia de beca, confirmación posterior, etc.).
+
+4. **Dudas u objeciones del usuario**
+   - Preguntas realizadas.
+   - Reticencias o condiciones expresadas (por ejemplo, rechazo a llamadas posteriores).
+
+5. **Acuerdos o siguientes pasos**
+   - Acciones acordadas durante la conversación (envío de información, contacto por otro canal, sin seguimiento, etc.).

@@ -27,21 +27,16 @@ class UserRow(BaseModel):
     def serialize_unix_ts(self, v: datetime | None) -> float | None:
         return None if v is None else v.timestamp()
 
+
 class UsersTable:
     def __init__(self, conn: duckdb.DuckDBPyConnection, is_postgres: bool) -> None:
         self.conn = conn
         self.table_name = "postgres.users" if is_postgres else "users"
 
     def setup_table(self) -> None:
-        self.conn.sql(
-            u.CREATE_USERS_TABLE_SQL.format(table_name=self.table_name)
-        )
-        self.conn.sql(
-            u.CREATE_USER_ID_INDEX_SQL.format(table_name=self.table_name)
-        )
-        self.conn.sql(
-            u.CREATE_OPPORTUNITY_ID_INDEX_SQL.format(table_name=self.table_name)
-        )
+        self.conn.sql(u.CREATE_USERS_TABLE_SQL.format(table_name=self.table_name))
+        self.conn.sql(u.CREATE_USER_ID_INDEX_SQL.format(table_name=self.table_name))
+        self.conn.sql(u.CREATE_OPPORTUNITY_ID_INDEX_SQL.format(table_name=self.table_name))
 
     def upsert_user(
         self,
@@ -81,9 +76,7 @@ class UsersTable:
         )
 
     def get_users(self) -> list[UserRow]:
-        rows = self.conn.sql(
-            u.LIST_USERS_SQL.format(table_name=self.table_name)
-        ).fetchall()
+        rows = self.conn.sql(u.LIST_USERS_SQL.format(table_name=self.table_name)).fetchall()
 
         return [
             UserRow(
@@ -113,14 +106,10 @@ class UsersTable:
         opportunity_id: str | None = None,
     ) -> UserRow | None:
         if user_id is None and contact_id is None and opportunity_id is None:
-            raise ValueError(
-                "get_user requires user_id, contact_id, or opportunity_id"
-            )
+            raise ValueError("get_user requires user_id, contact_id, or opportunity_id")
 
         row = self.conn.execute(
-            u.GET_USER_BY_IDENTIFIER_SQL.format(
-                table_name=self.table_name
-            ),
+            u.GET_USER_BY_IDENTIFIER_SQL.format(table_name=self.table_name),
             (
                 user_id,
                 contact_id,

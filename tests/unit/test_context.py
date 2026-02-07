@@ -1,9 +1,11 @@
 import json
 from datetime import timedelta
+from typing import cast
 
 import pytest
 
 from echo.context.context import UserContext
+from echo.context.types import Chat
 from echo.store.store import DuckDBStore
 
 OPPORTUNITY_ID = "0063Y00001B8anuQAB"
@@ -27,7 +29,7 @@ def add_langchain_chat(ctx: UserContext) -> None:
         HumanMessage("a human msg"),
         AIMessage("an ai message"),
     ]
-    chat = convert_to_openai_messages(chat_langchain)
+    chat = cast(Chat, convert_to_openai_messages(chat_langchain))
     ctx.add_chat(chat)
 
 
@@ -47,7 +49,7 @@ def add_livekit_chat(ctx: UserContext) -> None:
 
 
 def add_blob_url(ctx: UserContext) -> None:
-    ctx.add_summary({"url": "a blob url"})
+    ctx.add_blob({"url": "a blob url"})
 
 
 @pytest.fixture
@@ -64,12 +66,7 @@ def ctx() -> UserContext:
 
 
 def test_get_user_context(ctx: UserContext) -> None:
-    res = ctx.get_context(
-        max_age=timedelta(days=3),
-        channels=["voice", "whatsapp"],
-        types=["chat", "summary"]
-
-    )
+    res = ctx.get_context(max_age=timedelta(days=3), channels=["voice", "whatsapp"], types=["chat", "summary"])
 
     print(res)
 

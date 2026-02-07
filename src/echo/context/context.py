@@ -33,9 +33,7 @@ class UserContext:
         user_data = store.users.get_user(opportunity_id=opportunity_id)
 
         if not user_data:
-            raise RuntimeError(
-                f"Could not find user with opportunity_id: {opportunity_id}"
-            )
+            raise RuntimeError(f"Could not find user with opportunity_id: {opportunity_id}")
 
         if not thread_id:
             thread_id = uuid4()
@@ -83,4 +81,19 @@ class UserContext:
             channel=self.channel,
             type="chat",
             content=content,
+        )
+
+    async def add_summary(self, summary: str) -> None:
+        summary_json = json.dumps(
+            {"summary": summary},
+            ensure_ascii=False,
+        )
+
+        self.store.context.create_context(
+            thread_id=self.thread_id,
+            opportunity_id=self.user_data.opportunity_id,
+            user_id=self.user_data.user_id,
+            channel=self.channel,
+            type="summary",
+            content=summary_json,
         )

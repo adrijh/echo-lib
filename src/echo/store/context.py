@@ -34,7 +34,6 @@ class ContextTable:
         self.is_postgres = is_postgres
 
     def setup_table(self) -> None:
-
         # self.conn.sql(c.CREATE_CONTEXT_TYPE_ENUM_SQL)
         # self.conn.sql(c.CREATE_CHANNEL_TYPE_ENUM_SQL)
         self.conn.sql(c.CREATE_CONTEXT_TABLE_SQL.format(table_name=self.table_name))
@@ -42,6 +41,7 @@ class ContextTable:
         # if self.is_postgres:
         #     self.conn.sql(c.CREATE_CONTEXT_INDEXES_SQL.format(table_name=self.table_name))
         #
+
     def create_context(
         self,
         thread_id: UUID,
@@ -100,9 +100,7 @@ class ContextTable:
         )
 
     def get_contexts(self) -> list[ContextRow]:
-        rows = self.conn.sql(
-            c.LIST_CONTEXTS_SQL.format(table_name=self.table_name)
-        ).fetchall()
+        rows = self.conn.sql(c.LIST_CONTEXTS_SQL.format(table_name=self.table_name)).fetchall()
 
         return [
             ContextRow(
@@ -128,11 +126,8 @@ class ContextTable:
         types: list[ContextType] | None = None,
         channels: list[Channel] | None = None,
     ) -> list[ContextRow]:
-
         if user_id is None and opportunity_id is None:
-            raise ValueError(
-                "get_context_history requires either user_id or opportunity_id"
-            )
+            raise ValueError("get_context_history requires either user_id or opportunity_id")
 
         if max_age <= timedelta(0):
             raise ValueError("max_age must be a positive timedelta")
