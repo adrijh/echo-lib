@@ -1,10 +1,11 @@
-
-import json
 from typing import Any
+
 from langchain_core.prompts.chat import ChatPromptTemplate, HumanMessagePromptTemplate, SystemMessagePromptTemplate
 from langchain_core.runnables import RunnableSerializable
+
 from echo.prompts import load_langfuse_prompt
 from echo.utils.model import build_model
+
 
 def build_chain() -> RunnableSerializable:
     sys_prompt_msg = load_langfuse_prompt("core/summarize")
@@ -21,9 +22,7 @@ def build_chain() -> RunnableSerializable:
 
 
 def format_input(input: dict[str, Any]) -> dict[str, Any]:
-    raw_content = input.get("content", [])
-    raw_content = json.loads(raw_content)
-    events = raw_content.get("events", [])
+    events = input.get("content", [])
 
     messages: list[str] = []
 

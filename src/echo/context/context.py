@@ -87,16 +87,38 @@ class UserContext:
             content=content,
         )
 
-    async def add_summarize(self, blob: BlobUrl, type: str) -> None:
-        content = await get_blob_content(blob["url"])
+    async def add_summarize(
+        self,
+        blob: BlobUrl,
+        previous_summaries: list[str] | None = None,
+    ) -> None:
+        raw_bytes = await get_blob_content(blob["url"])
+        if raw_bytes is None:
+            raise RuntimeError("Blob content could not be loaded")
+
+        blob_json = json.loads(raw_bytes.decode("utf-8"))
+        events = blob_json.get("events", [])
+
+        llm_input = {
+            "content": events,
+        }
+
+        if previous_summaries:
+            llm_input["previous_context"] = "\n\n".join(previous_summaries)
 
         langfuse_handler = CallbackHandler()
         chain = build_chain()
+
         summary_text = chain.invoke(
-            {"content": content},
+            llm_input,
             config={"callbacks": [langfuse_handler]},
         ).content
-        summary_json = json.dumps({"summary": summary_text}, ensure_ascii=False)
+
+        summary_json = json.dumps(
+            {"summary": summary_text},
+            ensure_ascii=False,
+        )
+
         self.store.context.create_context(
             thread_id=self.thread_id,
             opportunity_id=self.user_data.opportunity_id,

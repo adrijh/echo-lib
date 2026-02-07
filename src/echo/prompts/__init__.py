@@ -1,9 +1,8 @@
 import inspect
 import os
 
-from echo.logger import configure_logger
-
 import echo.config as cfg
+from echo.logger import configure_logger
 
 log = configure_logger(__name__)
 

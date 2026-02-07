@@ -1,11 +1,13 @@
 import os
-from echo.logger import configure_logger
+
 from langchain_openai import (
     AzureChatOpenAI,
     ChatOpenAI,
 )
 from pydantic import SecretStr
+
 from echo import config as cfg
+from echo.logger import configure_logger
 
 logger = configure_logger(__name__)
 
@@ -14,6 +16,7 @@ type ChatModel = ChatOpenAI | AzureChatOpenAI
 
 OPENAI = "openai"
 AZURE = "azure"
+
 
 def _build_openai_chat(model: str) -> ChatOpenAI:
     return ChatOpenAI(
