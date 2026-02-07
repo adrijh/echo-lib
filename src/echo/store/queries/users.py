@@ -115,4 +115,3 @@ SET
 WHERE user_id = ?
   AND is_active = true;
 """)
-

@@ -47,7 +47,7 @@ def add_livekit_chat(ctx: UserContext) -> None:
 
 
 def add_blob_url(ctx: UserContext) -> None:
-    ctx.add_summary({"url": "a blob url"})
+    ctx.add_summarize({"url": "a blob url"})
 
 
 @pytest.fixture
@@ -64,12 +64,7 @@ def ctx() -> UserContext:
 
 
 def test_get_user_context(ctx: UserContext) -> None:
-    res = ctx.get_context(
-        max_age=timedelta(days=3),
-        channels=["voice", "whatsapp"],
-        types=["chat", "summary"]
-
-    )
+    res = ctx.get_context(max_age=timedelta(days=3), channels=["voice", "whatsapp"], types=["chat", "summary"])
 
     print(res)
 

@@ -9,7 +9,6 @@ log = configure_logger(__name__)
 
 async def get_blob_content(blob_url: str) -> bytes | None:
     async with BlobClient.from_blob_url(blob_url, credential=os.environ["AZURE_ACCOUNT_KEY"]) as client:
-
         try:
             stream = await client.download_blob()
             content = await stream.readall()

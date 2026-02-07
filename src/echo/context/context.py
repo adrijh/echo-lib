@@ -3,10 +3,14 @@ from datetime import timedelta
 from typing import Self
 from uuid import UUID, uuid4
 
+from langfuse.langchain import CallbackHandler
+
+from echo.context.chain import build_chain
 from echo.context.types import BlobUrl, Channel, Chat, ContextType
 from echo.store.context import ContextRow
 from echo.store.store import Store
 from echo.store.users import UserRow
+from echo.utils.storage import get_blob_content
 
 
 class UserContext:
@@ -33,9 +37,7 @@ class UserContext:
         user_data = store.users.get_user(opportunity_id=opportunity_id)
 
         if not user_data:
-            raise RuntimeError(
-                f"Could not find user with opportunity_id: {opportunity_id}"
-            )
+            raise RuntimeError(f"Could not find user with opportunity_id: {opportunity_id}")
 
         if not thread_id:
             thread_id = uuid4()
@@ -83,4 +85,23 @@ class UserContext:
             channel=self.channel,
             type="chat",
             content=content,
+        )
+
+    async def add_summarize(self, blob: BlobUrl, type: str) -> None:
+        content = await get_blob_content(blob["url"])
+
+        langfuse_handler = CallbackHandler()
+        chain = build_chain()
+        summary_text = chain.invoke(
+            {"content": content},
+            config={"callbacks": [langfuse_handler]},
+        ).content
+        summary_json = json.dumps({"summary": summary_text}, ensure_ascii=False)
+        self.store.context.create_context(
+            thread_id=self.thread_id,
+            opportunity_id=self.user_data.opportunity_id,
+            user_id=self.user_data.user_id,
+            channel=self.channel,
+            type="summary",
+            content=summary_json,
         )

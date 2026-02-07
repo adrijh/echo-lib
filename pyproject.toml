@@ -9,12 +9,16 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "aio-pika>=9.5.8",
+    "aiohttp>=3.13.3",
     "azure-storage-blob>=12.28.0",
     "duckdb>=1.4.4",
+    "langchain>=1.2.9",
     "langchain-openai>=1.1.7",
+    "langfuse>=3.13.0",
     "langgraph>=1.0.7",
     "opentelemetry-exporter-otlp>=1.39.1",
     "pydantic>=2.12.5",
+    "python-dotenv>=1.2.1",
     "pytz>=2025.2",
 ]
 

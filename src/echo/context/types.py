@@ -1,8 +1,9 @@
 from typing import Any, Literal, TypedDict
 
 type Channel = Literal["web", "whatsapp", "voice"]
-type ContextType = Literal["chat", "blob"]
+type ContextType = Literal["chat", "blob", "summary"]
 type Chat = list[dict[str, Any]]
+
 
 class BlobUrl(TypedDict):
     url: str
