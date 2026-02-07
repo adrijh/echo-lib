@@ -1,6 +1,6 @@
 [project]
 name = "echo"
-version = "0.1.6"
+version = "0.1.7"
 description = "Add your description here"
 readme = "README.md"
 authors = [
@@ -14,11 +14,9 @@ dependencies = [
     "duckdb>=1.4.4",
     "langchain>=1.2.9",
     "langchain-openai>=1.1.7",
-    "langfuse>=3.13.0",
     "langgraph>=1.0.7",
     "opentelemetry-exporter-otlp>=1.39.1",
     "pydantic>=2.12.5",
-    "python-dotenv>=1.2.1",
     "pytz>=2025.2",
 ]
 

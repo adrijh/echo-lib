@@ -30,7 +30,7 @@ def _build_azure_chat(deployment: str) -> AzureChatOpenAI:
         azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
         azure_deployment=deployment,
         api_key=SecretStr(os.environ["AZURE_OPENAI_KEY"]),
-        api_version=os.environ["OPENAI_API_VERSION"],
+        api_version=os.getenv("OPENAI_API_VERSION", "2024-12-01-preview"),
         reasoning_effort="none",
     )
 

@@ -3,14 +3,10 @@ from datetime import timedelta
 from typing import Self
 from uuid import UUID, uuid4
 
-from langfuse.langchain import CallbackHandler
-
-from echo.context.chain import build_chain
 from echo.context.types import BlobUrl, Channel, Chat, ContextType
 from echo.store.context import ContextRow
 from echo.store.store import Store
 from echo.store.users import UserRow
-from echo.utils.storage import get_blob_content
 
 
 class UserContext:
@@ -87,35 +83,9 @@ class UserContext:
             content=content,
         )
 
-    async def add_summarize(
-        self,
-        blob: BlobUrl,
-        previous_summaries: list[str] | None = None,
-    ) -> None:
-        raw_bytes = await get_blob_content(blob["url"])
-        if raw_bytes is None:
-            raise RuntimeError("Blob content could not be loaded")
-
-        blob_json = json.loads(raw_bytes.decode("utf-8"))
-        events = blob_json.get("events", [])
-
-        llm_input = {
-            "content": events,
-        }
-
-        if previous_summaries:
-            llm_input["previous_context"] = "\n\n".join(previous_summaries)
-
-        langfuse_handler = CallbackHandler()
-        chain = build_chain()
-
-        summary_text = chain.invoke(
-            llm_input,
-            config={"callbacks": [langfuse_handler]},
-        ).content
-
+    async def add_summary(self, summary: str) -> None:
         summary_json = json.dumps(
-            {"summary": summary_text},
+            {"summary": summary},
             ensure_ascii=False,
         )
 
