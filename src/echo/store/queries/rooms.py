@@ -3,6 +3,7 @@ from textwrap import dedent
 CREATE_ROOMS_TABLE_SQL = dedent("""
     CREATE TABLE IF NOT EXISTS {table_name} (
         room_id          TEXT PRIMARY KEY,
+        thread_id        UUID NOT NULL,
         opportunity_id   TEXT NOT NULL,
         start_timestamp  TIMESTAMPTZ,
         end_timestamp    TIMESTAMPTZ,
@@ -13,12 +14,13 @@ CREATE_ROOMS_TABLE_SQL = dedent("""
 UPSERT_ROOM_SQL = dedent("""
 INSERT INTO {table_name} (
     room_id,
+    thread_id,
     opportunity_id,
     start_timestamp,
     end_timestamp,
     report_url
 )
-VALUES (?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?)
 ON CONFLICT (room_id)
 DO UPDATE SET
     start_timestamp = COALESCE({table_name}.start_timestamp, EXCLUDED.start_timestamp),
@@ -29,6 +31,7 @@ DO UPDATE SET
 LIST_ROOMS_SQL = dedent("""
 SELECT
     room_id,
+    thread_id,
     opportunity_id,
     start_timestamp,
     end_timestamp,

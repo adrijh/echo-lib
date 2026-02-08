@@ -1,6 +1,6 @@
 [project]
 name = "echo"
-version = "0.1.8"
+version = "0.1.9"
 description = "Add your description here"
 readme = "README.md"
 authors = [
@@ -31,6 +31,7 @@ dev = [
     "types-markdown>=3.10.0.20251106",
     "python-dotenv>=1.2.1",
     "ruff>=0.14.14",
+    "livekit-agents>=1.4.1",
 ]
 
 [tool.mypy]

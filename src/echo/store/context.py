@@ -50,7 +50,7 @@ class ContextTable:
         channel: Channel,
         content: str,
         type: ContextType,
-    ) -> None:
+    ) -> UUID:
         context_id = uuid4()
         self.conn.execute(
             c.INSERT_CONTEXT_SQL.format(table_name=self.table_name),
@@ -64,6 +64,7 @@ class ContextTable:
                 type,
             ),
         )
+        return context_id
 
     def update_content(
         self,

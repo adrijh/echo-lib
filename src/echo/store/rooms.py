@@ -1,4 +1,5 @@
 from datetime import datetime
+from uuid import UUID
 
 import duckdb
 from pydantic import BaseModel, field_serializer
@@ -31,6 +32,7 @@ class RoomsTable:
     def set_room_start(
         self,
         room_id: str,
+        thread_id: UUID,
         opportunity_id: str,
         start_time: datetime,
     ) -> None:
@@ -38,6 +40,7 @@ class RoomsTable:
             r.UPSERT_ROOM_SQL.format(table_name=self.table_name),
             (
                 room_id,
+                thread_id,
                 opportunity_id,
                 start_time,
                 None,
@@ -48,12 +51,14 @@ class RoomsTable:
     def set_room_end(
         self,
         room_id: str,
+        thread_id: UUID,
         end_time: datetime,
     ) -> None:
         self.conn.execute(
             r.UPSERT_ROOM_SQL.format(table_name=self.table_name),
             (
                 room_id,
+                thread_id,
                 None,
                 None,
                 end_time,
@@ -61,11 +66,12 @@ class RoomsTable:
             ),
         )
 
-    def set_room_report(self, room_id: str, report_url: str) -> None:
+    def set_room_report(self, room_id: str, thread_id: UUID, report_url: str) -> None:
         self.conn.execute(
             r.UPSERT_ROOM_SQL.format(table_name=self.table_name),
             (
                 room_id,
+                thread_id,
                 None,
                 None,
                 None,
