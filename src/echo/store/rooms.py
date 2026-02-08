@@ -10,6 +10,7 @@ from echo.store.queries import rooms as r
 class RoomsRow(BaseModel):
     room_id: str
     opportunity_id: str
+    thread_id: UUID
     start_time: datetime
     end_time: datetime | None
     report_url: str | None
@@ -84,10 +85,11 @@ class RoomsTable:
         return [
             RoomsRow(
                 room_id=elem[0],
-                opportunity_id=elem[1],
-                start_time=elem[2],
-                end_time=elem[3],
-                report_url=elem[4],
+                thread_id=elem[1],
+                opportunity_id=elem[2],
+                start_time=elem[3],
+                end_time=elem[4],
+                report_url=elem[5],
             )
             for elem in data
         ]
