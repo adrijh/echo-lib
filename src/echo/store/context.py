@@ -123,12 +123,13 @@ class ContextTable:
         *,
         user_id: UUID | None = None,
         opportunity_id: str | None = None,
+        thread_id: UUID | None = None,
         max_age: timedelta = timedelta(days=30),
         types: list[ContextType] | None = None,
         channels: list[Channel] | None = None,
     ) -> list[ContextRow]:
-        if user_id is None and opportunity_id is None:
-            raise ValueError("get_context_history requires either user_id or opportunity_id")
+        if thread_id is None and user_id is None and opportunity_id is None:
+            raise ValueError("get_context_history requires either thread_id, user_id or opportunity_id")
 
         if max_age <= timedelta(0):
             raise ValueError("max_age must be a positive timedelta")
@@ -147,6 +148,10 @@ class ContextTable:
         if opportunity_id is not None:
             conditions.append("opportunity_id = ?")
             params.append(opportunity_id)
+
+        if thread_id is not None:
+            conditions.append("thread_id = ?")
+            params.append(thread_id)
 
         if types:
             placeholders = ", ".join("?" for _ in types)
