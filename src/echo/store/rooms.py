@@ -53,6 +53,7 @@ class RoomsTable:
         self,
         room_id: str,
         thread_id: UUID,
+        opportunity_id: str,
         end_time: datetime,
     ) -> None:
         self.conn.execute(
@@ -60,20 +61,26 @@ class RoomsTable:
             (
                 room_id,
                 thread_id,
-                None,
+                opportunity_id,
                 None,
                 end_time,
                 None,
             ),
         )
 
-    def set_room_report(self, room_id: str, thread_id: UUID, report_url: str) -> None:
+    def set_room_report(
+        self,
+        room_id: str,
+        thread_id: UUID,
+        opportunity_id: str,
+        report_url: str,
+    ) -> None:
         self.conn.execute(
             r.UPSERT_ROOM_SQL.format(table_name=self.table_name),
             (
                 room_id,
                 thread_id,
-                None,
+                opportunity_id,
                 None,
                 None,
                 report_url,
