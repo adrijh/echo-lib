@@ -57,6 +57,10 @@ class SendWhatsappTemplate(SessionEvent):
     phone_number: str
 
 
+class WhatsappMessageReceived(SessionEvent):
+    type: Literal["whatsapp_message_received"] = Field(default="whatsapp_message_received", frozen=True)
+
+
 SessionEventDiscriminator = Annotated[
     SessionStarted | SessionEnded | StartSessionRequest | SendWhatsappTemplate,
     Field(discriminator="type"),
