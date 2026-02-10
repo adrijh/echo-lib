@@ -62,7 +62,7 @@ class WhatsappMessageReceived(SessionEvent):
 
 
 SessionEventDiscriminator = Annotated[
-    SessionStarted | SessionEnded | StartSessionRequest | SendWhatsappTemplate,
+    SessionStarted | SessionEnded | StartSessionRequest | SendWhatsappTemplate | WhatsappMessageReceived,
     Field(discriminator="type"),
 ]
 
