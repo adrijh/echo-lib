@@ -64,7 +64,7 @@ class RabbitQueue:
             password=os.environ["RABBITMQ_PASSWORD"],
         )
 
-    async def send_event(self, event: events.SessionEvent) -> None:
+    async def send_event(self, event: events.BaseEvent) -> None:
         message = aio_pika.Message(
             body=event.model_dump_json().encode(),
             delivery_mode=aio_pika.DeliveryMode.PERSISTENT,

@@ -1,4 +1,7 @@
+from collections.abc import Sequence
 from datetime import datetime
+from textwrap import dedent
+from typing import Any
 from uuid import UUID
 
 import duckdb
@@ -136,3 +139,62 @@ class UsersTable:
             added_timestamp=row[12],
             updated_timestamp=row[13],
         )
+
+    def query_users(
+        self,
+        where_clause: str = "",
+        params: Sequence[Any] | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+    ) -> list[UserRow]:
+        sql = dedent(f"""
+        SELECT
+            user_id,
+            contact_id,
+            opportunity_id,
+            name,
+            last_name,
+            phone_number,
+            mail,
+            market,
+            faculty,
+            plancode,
+            track,
+            is_active,
+            added_timestamp,
+            updated_timestamp
+        FROM {self.table_name}
+        """)
+
+        if where_clause:
+            sql += f" WHERE {where_clause}"
+
+        if limit is not None:
+            sql += " LIMIT ?"
+            params = (*params, limit) if params else (limit,)
+
+        if offset is not None:
+            sql += " OFFSET ?"
+            params = (*params, offset) if params else (offset,)
+
+        rows = self.conn.execute(sql, params or ()).fetchall()
+
+        return [UserRow(**self._row_to_dict(r)) for r in rows]
+
+    def _row_to_dict(self, r: tuple[Any, ...]) -> dict[str, Any]:
+        return {
+            "user_id": r[0],
+            "contact_id": r[1],
+            "opportunity_id": r[2],
+            "name": r[3],
+            "last_name": r[4],
+            "phone_number": r[5],
+            "mail": r[6],
+            "market": r[7],
+            "faculty": r[8],
+            "plancode": r[9],
+            "track": r[10],
+            "is_active": r[11],
+            "added_timestamp": r[12],
+            "updated_timestamp": r[13],
+        }

@@ -5,12 +5,10 @@ from uuid import UUID, uuid4
 from pydantic import BaseModel, Field, TypeAdapter, ValidationError, field_serializer, field_validator
 
 
-class SessionEvent(BaseModel):
+class BaseEvent(BaseModel):
     version: Literal["v1"] = Field(default="v1", frozen=True)
     timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
     metadata: dict[str, Any] = Field(default_factory=dict)
-    thread_id: UUID = Field(default_factory=uuid4)
-    opportunity_id: str
 
     @field_validator("timestamp", mode="before")
     @classmethod
@@ -31,6 +29,11 @@ class SessionEvent(BaseModel):
     @field_serializer("timestamp")
     def serialize_unix_ts(self, v: datetime) -> float:
         return v.timestamp()
+
+
+class SessionEvent(BaseEvent):
+    thread_id: UUID = Field(default_factory=uuid4)
+    opportunity_id: str
 
 
 class SessionStarted(SessionEvent):
@@ -61,8 +64,23 @@ class WhatsappMessageReceived(SessionEvent):
     type: Literal["whatsapp_message_received"] = Field(default="whatsapp_message_received", frozen=True)
 
 
+class ScheduleCall(BaseEvent):
+    type: Literal["schedule_call"] = Field(default="schedule_call", frozen=True)
+    target: Literal["ai", "asesor"]
+    thread_id: UUID = Field(default_factory=uuid4)
+    datetime: str
+    first_name: str
+    last_name: str
+    phone_number: str
+
+
 SessionEventDiscriminator = Annotated[
-    SessionStarted | SessionEnded | StartSessionRequest | SendWhatsappTemplate | WhatsappMessageReceived,
+    SessionStarted
+    | SessionEnded
+    | StartSessionRequest
+    | SendWhatsappTemplate
+    | WhatsappMessageReceived
+    | ScheduleCall,
     Field(discriminator="type"),
 ]
 
