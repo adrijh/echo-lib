@@ -43,7 +43,7 @@ class RabbitConnection:
         name: str,
         *,
         prefetch: int = 1,
-        durable: bool = True,
+        durable: bool = False,
     ) -> RabbitQueue:
         channel = await self._conn.channel()
         await channel.set_qos(prefetch_count=prefetch)
