@@ -8,7 +8,7 @@ CREATE_ROOMS_TABLE_SQL = dedent("""
         start_timestamp  TIMESTAMPTZ,
         end_timestamp    TIMESTAMPTZ,
         report_url       TEXT,
-        metadata         JSONB
+        metadata         JSON
     );
 """)
 
@@ -22,16 +22,16 @@ INSERT INTO {table_name} (
     report_url,
     metadata
 )
-VALUES (?, ?, ?, ?, ?, ?, ?::jsonb)
+VALUES (?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT (room_id)
 DO UPDATE SET
     start_timestamp = COALESCE({table_name}.start_timestamp, EXCLUDED.start_timestamp),
     end_timestamp   = COALESCE({table_name}.end_timestamp,   EXCLUDED.end_timestamp),
     report_url      = COALESCE(EXCLUDED.report_url,            {table_name}.report_url),
     metadata        = COALESCE(
-        {table_name}.metadata::jsonb || EXCLUDED.metadata::jsonb,
-        {table_name}.metadata::jsonb,
-        EXCLUDED.metadata::jsonb
+        {table_name}.metadata || EXCLUDED.metadata,
+        {table_name}.metadata,
+        EXCLUDED.metadata
     );
 """)
 
