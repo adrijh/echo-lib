@@ -49,7 +49,6 @@ class RoomsTable:
         thread_id: UUID,
         opportunity_id: str,
         start_time: datetime,
-        metadata: dict[str, str] | None = None,
     ) -> None:
         self.conn.execute(
             r.UPSERT_ROOM_SQL.format(table_name=self.table_name),
@@ -60,7 +59,6 @@ class RoomsTable:
                 start_time,
                 None,
                 None,
-                metadata,
             ),
         )
 
@@ -70,7 +68,6 @@ class RoomsTable:
         thread_id: UUID,
         opportunity_id: str,
         end_time: datetime,
-        metadata: dict[str, str] | None = None,
     ) -> None:
         self.conn.execute(
             r.UPSERT_ROOM_SQL.format(table_name=self.table_name),
@@ -81,7 +78,6 @@ class RoomsTable:
                 None,
                 end_time,
                 None,
-                json.dumps(metadata) if metadata else None,
             ),
         )
 
@@ -101,7 +97,6 @@ class RoomsTable:
                 None,
                 None,
                 report_url,
-                None,
             ),
         )
 
@@ -115,7 +110,6 @@ class RoomsTable:
                 start_time=elem[3],
                 end_time=elem[4],
                 report_url=elem[5],
-                metadata=elem[6],
             )
             for elem in data
         ]

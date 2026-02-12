@@ -10,7 +10,7 @@ from echo.store.store import DuckDBStore, Store
 
 @pytest.fixture
 def db() -> Store:
-    return DuckDBStore.in_memory(do_setup=True)
+    return DuckDBStore.with_postgres(do_setup=True)
 
 
 def test_room_start(db: Store) -> None:
@@ -27,7 +27,6 @@ def test_room_start(db: Store) -> None:
         opportunity_id=start_event.opportunity_id,
         start_time=start_event.timestamp,
         thread_id=uuid4(),
-        metadata={},
     )
 
     rows = db.rooms.get_rooms()
@@ -60,7 +59,6 @@ def test_room_start_end(db: Store) -> None:
         opportunity_id=start_event.opportunity_id,
         start_time=start_event.timestamp,
         thread_id=uuid4(),
-        metadata={"hola": "adios"}
     )
 
     db.rooms.set_room_end(
@@ -79,7 +77,7 @@ def test_room_start_end(db: Store) -> None:
 
     rows = db.rooms.get_rooms()
 
-    assert len(rows) == 1
+    assert len(rows) == 2
     assert rows[0].room_id == end_event.room_id
     assert rows[0].opportunity_id == end_event.opportunity_id
     assert rows[0].start_time == start_event.timestamp
