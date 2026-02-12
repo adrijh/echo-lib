@@ -47,7 +47,7 @@ class AnalyticsTable:
     ) -> None:
         self.conn.execute(
             q.INSERT_ANALYTICS_SQL.format(table_name=self.table_name),
-            (
+            [
                 room_id,
                 opportunity_id,
                 thread_id,
@@ -72,5 +72,5 @@ class AnalyticsTable:
                 insight.callback_time,
                 duration,
                 recording_url,
-            ),
+            ],
         )
