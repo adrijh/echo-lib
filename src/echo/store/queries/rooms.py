@@ -7,7 +7,8 @@ CREATE_ROOMS_TABLE_SQL = dedent("""
         opportunity_id   TEXT NOT NULL,
         start_timestamp  TIMESTAMPTZ,
         end_timestamp    TIMESTAMPTZ,
-        report_url       TEXT
+        report_url       TEXT,
+        metadata         JSONB
     );
 """)
 
@@ -18,14 +19,20 @@ INSERT INTO {table_name} (
     opportunity_id,
     start_timestamp,
     end_timestamp,
-    report_url
+    report_url,
+    metadata
 )
-VALUES (?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?::jsonb)
 ON CONFLICT (room_id)
 DO UPDATE SET
     start_timestamp = COALESCE({table_name}.start_timestamp, EXCLUDED.start_timestamp),
     end_timestamp   = COALESCE({table_name}.end_timestamp,   EXCLUDED.end_timestamp),
-    report_url      = COALESCE(EXCLUDED.report_url,            {table_name}.report_url);
+    report_url      = COALESCE(EXCLUDED.report_url,            {table_name}.report_url),
+    metadata        = COALESCE(
+        {table_name}.metadata::jsonb || EXCLUDED.metadata::jsonb,
+        {table_name}.metadata::jsonb,
+        EXCLUDED.metadata::jsonb
+    );
 """)
 
 LIST_ROOMS_SQL = dedent("""
@@ -35,7 +42,8 @@ SELECT
     opportunity_id,
     start_timestamp,
     end_timestamp,
-    report_url
+    report_url,
+    metadata
 FROM {table_name}
 ORDER BY start_timestamp DESC NULLS LAST;
 """)
