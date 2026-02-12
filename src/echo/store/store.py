@@ -2,6 +2,7 @@ from typing import Protocol, Self
 
 import duckdb
 
+from echo.store.analytics import AnalyticsTable
 from echo.store.context import ContextTable
 from echo.store.queries.postgres import ATTACH_POSTGRES_SQL, CREATE_POSTGRES_SECRET_SQL
 from echo.store.rooms import RoomsTable
@@ -12,6 +13,7 @@ class Store(Protocol):
     rooms: RoomsTable
     users: UsersTable
     context: ContextTable
+    analytics: AnalyticsTable
 
 
 class DuckDBStore:
@@ -25,6 +27,7 @@ class DuckDBStore:
         self.rooms = RoomsTable(conn, is_postgres)
         self.users = UsersTable(conn, is_postgres)
         self.context = ContextTable(conn, is_postgres)
+        self.analytics = AnalyticsTable(conn, is_postgres)
 
         if do_setup:
             self._setup_tables()
@@ -53,3 +56,4 @@ class DuckDBStore:
         self.rooms.setup_table()
         self.users.setup_table()
         self.context.setup_table()
+        self.analytics.setup_table()
