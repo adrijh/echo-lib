@@ -496,7 +496,7 @@ wheels = [
 
 [[package]]
 name = "echo"
-version = "0.1.18"
+version = "0.1.22"
 source = { editable = "." }
 dependencies = [
     { name = "aio-pika" },

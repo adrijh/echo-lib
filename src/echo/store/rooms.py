@@ -1,12 +1,14 @@
 import json
 from datetime import datetime
+from typing import Any, cast
 from uuid import UUID
 
 import duckdb
-from pydantic import BaseModel, field_serializer
+from pydantic import BaseModel, field_serializer, field_validator
 
 from echo.store.queries import rooms as r
 
+type JsonType = dict[str, Any] | list[dict[str, Any]] | None
 
 class RoomsRow(BaseModel):
     room_id: str
@@ -15,13 +17,22 @@ class RoomsRow(BaseModel):
     start_time: datetime
     end_time: datetime | None
     report_url: str | None
-    metadata: dict[str, str] | None = None
+    metadata: JsonType = None
 
     @field_serializer("start_time", "end_time")
     def serialize_unix_ts(self, v: datetime | None) -> float | None:
         if v is None:
             return None
         return v.timestamp()
+
+    @field_validator("metadata", mode="before")
+    @classmethod
+    def deserialize_metadata(cls, v: str | None) -> dict[str, Any] | list[dict[str, Any]] | None:
+        if v is None:
+            return None
+
+        if isinstance(v, str):
+            return cast(JsonType, json.loads(v))
 
 
 class RoomsTable:
@@ -49,7 +60,7 @@ class RoomsTable:
                 start_time,
                 None,
                 None,
-                json.dumps(metadata) if metadata else None,
+                metadata,
             ),
         )
 
@@ -90,6 +101,7 @@ class RoomsTable:
                 None,
                 None,
                 report_url,
+                None,
             ),
         )
 

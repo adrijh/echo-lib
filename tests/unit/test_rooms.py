@@ -1,3 +1,4 @@
+import json
 from datetime import timedelta
 from uuid import uuid4
 
@@ -25,6 +26,8 @@ def test_room_start(db: Store) -> None:
         room_id=start_event.room_id,
         opportunity_id=start_event.opportunity_id,
         start_time=start_event.timestamp,
+        thread_id=uuid4(),
+        metadata={},
     )
 
     rows = db.rooms.get_rooms()
@@ -56,16 +59,22 @@ def test_room_start_end(db: Store) -> None:
         room_id=start_event.room_id,
         opportunity_id=start_event.opportunity_id,
         start_time=start_event.timestamp,
+        thread_id=uuid4(),
+        metadata={"hola": "adios"}
     )
 
     db.rooms.set_room_end(
         room_id=end_event.room_id,
         end_time=end_event.timestamp,
+        thread_id=uuid4(),
+        opportunity_id="000000",
     )
 
     db.rooms.set_room_report(
         room_id=end_event.room_id,
         report_url=end_event.report_url,
+        opportunity_id="000000",
+        thread_id=uuid4(),
     )
 
     rows = db.rooms.get_rooms()
