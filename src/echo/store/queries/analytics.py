@@ -48,5 +48,4 @@ INSERT INTO {table_name} (
     ?, ?, ?, ?,
     ?, ?
 )
-ON CONFLICT (room_id) DO NOTHING;
 """
