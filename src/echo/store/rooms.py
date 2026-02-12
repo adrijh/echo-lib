@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 from uuid import UUID
 
@@ -14,6 +15,7 @@ class RoomsRow(BaseModel):
     start_time: datetime
     end_time: datetime | None
     report_url: str | None
+    metadata: dict[str, str] | None = None
 
     @field_serializer("start_time", "end_time")
     def serialize_unix_ts(self, v: datetime | None) -> float | None:
@@ -36,6 +38,7 @@ class RoomsTable:
         thread_id: UUID,
         opportunity_id: str,
         start_time: datetime,
+        metadata: dict[str, str] | None = None,
     ) -> None:
         self.conn.execute(
             r.UPSERT_ROOM_SQL.format(table_name=self.table_name),
@@ -46,6 +49,7 @@ class RoomsTable:
                 start_time,
                 None,
                 None,
+                json.dumps(metadata) if metadata else None,
             ),
         )
 
@@ -55,6 +59,7 @@ class RoomsTable:
         thread_id: UUID,
         opportunity_id: str,
         end_time: datetime,
+        metadata: dict[str, str] | None = None,
     ) -> None:
         self.conn.execute(
             r.UPSERT_ROOM_SQL.format(table_name=self.table_name),
@@ -65,6 +70,7 @@ class RoomsTable:
                 None,
                 end_time,
                 None,
+                json.dumps(metadata) if metadata else None,
             ),
         )
 
@@ -97,6 +103,7 @@ class RoomsTable:
                 start_time=elem[3],
                 end_time=elem[4],
                 report_url=elem[5],
+                metadata=elem[6],
             )
             for elem in data
         ]
