@@ -1,6 +1,7 @@
 import json
 from datetime import timedelta
 from typing import cast
+from uuid import uuid4
 
 import pytest
 
@@ -54,7 +55,14 @@ def add_blob_url(ctx: UserContext) -> None:
 
 @pytest.fixture
 def ctx() -> UserContext:
-    store = DuckDBStore.with_postgres(do_setup=True)
+    store = DuckDBStore.in_memory(do_setup=True)
+    store.users.upsert_user(
+        user_id=str(uuid4()),
+        opportunity_id=OPPORTUNITY_ID,
+        contact_id="test_contact_id",
+        name="Test",
+        last_name="User",
+    )
     ctx = UserContext.from_opportunity_id(
         store=store,
         opportunity_id=OPPORTUNITY_ID,
@@ -72,6 +80,6 @@ def test_get_user_context(ctx: UserContext) -> None:
 
 
 def test_get_user_context_by_type(ctx: UserContext) -> None:
-    res = ctx.get_context(types=["summary"])
+    res = ctx.get_context(types=["blob"])
     summary = json.loads(res[0].content)
     assert summary["url"] == "a blob url"

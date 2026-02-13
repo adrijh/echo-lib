@@ -43,23 +43,58 @@ class RoomsTable:
     def setup_table(self) -> None:
         self.conn.sql(r.CREATE_ROOMS_TABLE_SQL.format(table_name=self.table_name))
 
+    def _upsert(
+        self,
+        room_id: str,
+        thread_id: UUID,
+        opportunity_id: str,
+        start_time: datetime | None,
+        end_time: datetime | None,
+        report_url: str | None,
+        metadata: dict[str, str] | None,
+    ) -> None:
+        meta_json = json.dumps(metadata) if metadata else None
+        try:
+            self.conn.execute(
+                r.INSERT_ROOM_SQL.format(table_name=self.table_name),
+                (
+                    room_id,
+                    thread_id,
+                    opportunity_id,
+                    start_time,
+                    end_time,
+                    report_url,
+                    meta_json,
+                ),
+            )
+        except duckdb.ConstraintException:
+            self.conn.execute(
+                r.UPDATE_ROOM_SQL.format(table_name=self.table_name),
+                (
+                    start_time,
+                    end_time,
+                    report_url,
+                    meta_json,
+                    room_id,
+                ),
+            )
+
     def set_room_start(
         self,
         room_id: str,
         thread_id: UUID,
         opportunity_id: str,
         start_time: datetime,
+        metadata: dict[str, str] | None = None,
     ) -> None:
-        self.conn.execute(
-            r.UPSERT_ROOM_SQL.format(table_name=self.table_name),
-            (
-                room_id,
-                thread_id,
-                opportunity_id,
-                start_time,
-                None,
-                None,
-            ),
+        self._upsert(
+            room_id,
+            thread_id,
+            opportunity_id,
+            start_time,
+            None,
+            None,
+            metadata,
         )
 
     def set_room_end(
@@ -68,17 +103,16 @@ class RoomsTable:
         thread_id: UUID,
         opportunity_id: str,
         end_time: datetime,
+        metadata: dict[str, str] | None = None,
     ) -> None:
-        self.conn.execute(
-            r.UPSERT_ROOM_SQL.format(table_name=self.table_name),
-            (
-                room_id,
-                thread_id,
-                opportunity_id,
-                None,
-                end_time,
-                None,
-            ),
+        self._upsert(
+            room_id,
+            thread_id,
+            opportunity_id,
+            None,
+            end_time,
+            None,
+            metadata,
         )
 
     def set_room_report(
@@ -88,16 +122,14 @@ class RoomsTable:
         opportunity_id: str,
         report_url: str,
     ) -> None:
-        self.conn.execute(
-            r.UPSERT_ROOM_SQL.format(table_name=self.table_name),
-            (
-                room_id,
-                thread_id,
-                opportunity_id,
-                None,
-                None,
-                report_url,
-            ),
+        self._upsert(
+            room_id,
+            thread_id,
+            opportunity_id,
+            None,
+            None,
+            report_url,
+            None,
         )
 
     def get_rooms(self) -> list[RoomsRow]:
@@ -110,6 +142,7 @@ class RoomsTable:
                 start_time=elem[3],
                 end_time=elem[4],
                 report_url=elem[5],
+                metadata=elem[6],
             )
             for elem in data
         ]
