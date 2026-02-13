@@ -1,0 +1,407 @@
+{
+  "job_id": "AJ_icWnSWtNV6vh",
+  "room_id": "RM_4L6rBT3DczhX",
+  "room": "room-alfon1-c03a8b09",
+  "events": [
+    {
+      "type": "agent_state_changed",
+      "old_state": "initializing",
+      "new_state": "listening",
+      "created_at": 1770471466.7932425
+    },
+    {
+      "type": "speech_created",
+      "user_initiated": true,
+      "source": "generate_reply",
+      "created_at": 1770471466.799212
+    },
+    {
+      "type": "agent_state_changed",
+      "old_state": "listening",
+      "new_state": "thinking",
+      "created_at": 1770471466.9040873
+    },
+    {
+      "type": "conversation_item_added",
+      "item": {
+        "id": "item_5f65efeb3c20",
+        "type": "message",
+        "role": "assistant",
+        "content": [
+          "Hola, \u00bfAlfonso Jerez Izquierdo?"
+        ],
+        "interrupted": false,
+        "transcript_confidence": null,
+        "extra": {},
+        "metrics": {
+          "llm_node_ttft": 0.6121752450126223,
+          "tts_node_ttfb": 0.2800628640106879
+        },
+        "created_at": 1770471466.9121864,
+        "hash": null
+      },
+      "created_at": 1770471472.3833566
+    },
+    {
+      "type": "agent_state_changed",
+      "old_state": "thinking",
+      "new_state": "listening",
+      "created_at": 1770471472.3838696
+    },
+    {
+      "type": "user_state_changed",
+      "old_state": "listening",
+      "new_state": "speaking",
+      "created_at": 1770471472.7891362
+    },
+    {
+      "type": "user_state_changed",
+      "old_state": "speaking",
+      "new_state": "listening",
+      "created_at": 1770471473.2883415
+    },
+    {
+      "type": "user_state_changed",
+      "old_state": "listening",
+      "new_state": "speaking",
+      "created_at": 1770471474.388198
+    },
+    {
+      "type": "user_input_transcribed",
+      "transcript": "Ok,",
+      "is_final": true,
+      "speaker_id": null,
+      "language": "es",
+      "created_at": 1770471474.9091692
+    },
+    {
+      "type": "speech_created",
+      "user_initiated": true,
+      "source": "generate_reply",
+      "created_at": 1770471474.9095757
+    },
+    {
+      "type": "user_state_changed",
+      "old_state": "speaking",
+      "new_state": "listening",
+      "created_at": 1770471474.939139
+    },
+    {
+      "type": "conversation_item_added",
+      "item": {
+        "id": "item_20a9765bb386",
+        "type": "message",
+        "role": "user",
+        "content": [
+          "Ok,"
+        ],
+        "interrupted": false,
+        "transcript_confidence": 0.5385742,
+        "extra": {},
+        "metrics": {
+          "started_speaking_at": 1770471472.7377415,
+          "stopped_speaking_at": 1770471474.7387924,
+          "transcription_delay": 0.17060542106628418,
+          "end_of_turn_delay": 0.22448062896728516,
+          "on_user_turn_completed_delay": 1.7170095816254616e-06
+        },
+        "created_at": 1770471474.9094877,
+        "hash": null
+      },
+      "created_at": 1770471474.9641879
+    },
+    {
+      "type": "agent_state_changed",
+      "old_state": "listening",
+      "new_state": "thinking",
+      "created_at": 1770471474.9642007
+    },
+    {
+      "type": "user_state_changed",
+      "old_state": "listening",
+      "new_state": "speaking",
+      "created_at": 1770471475.2881796
+    },
+    {
+      "type": "agent_state_changed",
+      "old_state": "thinking",
+      "new_state": "speaking",
+      "created_at": 1770471475.7600882
+    },
+    {
+      "type": "user_input_transcribed",
+      "transcript": "Hola, buenas.",
+      "is_final": false,
+      "speaker_id": null,
+      "language": "es",
+      "created_at": 1770471475.9113638
+    },
+    {
+      "type": "agent_state_changed",
+      "old_state": "speaking",
+      "new_state": "listening",
+      "created_at": 1770471475.938037
+    },
+    {
+      "type": "user_state_changed",
+      "old_state": "speaking",
+      "new_state": "listening",
+      "created_at": 1770471476.039213
+    },
+    {
+      "type": "user_input_transcribed",
+      "transcript": "Hola, buenas.",
+      "is_final": true,
+      "speaker_id": null,
+      "language": "es",
+      "created_at": 1770471476.3642745
+    },
+    {
+      "type": "conversation_item_added",
+      "item": {
+        "id": "item_f08b2e5ddbdf",
+        "type": "message",
+        "role": "assistant",
+        "content": [
+          "Soy"
+        ],
+        "interrupted": true,
+        "transcript_confidence": null,
+        "extra": {},
+        "metrics": {
+          "started_speaking_at": 1770471475.759357,
+          "stopped_speaking_at": 1770471476.3668787,
+          "llm_node_ttft": 0.47376376698957756,
+          "tts_node_ttfb": 0.3743413260090165,
+          "e2e_latency": 1.0205645561218262
+        },
+        "created_at": 1770471474.9645655,
+        "hash": null
+      },
+      "created_at": 1770471476.3803678
+    },
+    {
+      "type": "speech_created",
+      "user_initiated": true,
+      "source": "generate_reply",
+      "created_at": 1770471476.4009695
+    },
+    {
+      "type": "conversation_item_added",
+      "item": {
+        "id": "item_02e1aecd7ceb",
+        "type": "message",
+        "role": "user",
+        "content": [
+          "Hola, buenas."
+        ],
+        "interrupted": false,
+        "transcript_confidence": 0.953125,
+        "extra": {},
+        "metrics": {
+          "started_speaking_at": 1770471475.2384772,
+          "stopped_speaking_at": 1770471475.8885436,
+          "transcription_delay": 0.47594571113586426,
+          "end_of_turn_delay": 0.5118849277496338,
+          "on_user_turn_completed_delay": 1.508975401520729e-06
+        },
+        "created_at": 1770471476.4008965,
+        "hash": null
+      },
+      "created_at": 1770471476.4050033
+    },
+    {
+      "type": "agent_state_changed",
+      "old_state": "listening",
+      "new_state": "thinking",
+      "created_at": 1770471476.405014
+    },
+    {
+      "type": "agent_state_changed",
+      "old_state": "thinking",
+      "new_state": "speaking",
+      "created_at": 1770471477.2306156
+    },
+    {
+      "type": "user_state_changed",
+      "old_state": "listening",
+      "new_state": "speaking",
+      "created_at": 1770471479.3396473
+    },
+    {
+      "type": "user_state_changed",
+      "old_state": "speaking",
+      "new_state": "listening",
+      "created_at": 1770471479.9383132
+    },
+    {
+      "type": "user_state_changed",
+      "old_state": "listening",
+      "new_state": "speaking",
+      "created_at": 1770471482.0384326
+    },
+    {
+      "type": "user_state_changed",
+      "old_state": "speaking",
+      "new_state": "listening",
+      "created_at": 1770471482.8890152
+    },
+    {
+      "type": "conversation_item_added",
+      "item": {
+        "id": "item_ab5c33227455",
+        "type": "message",
+        "role": "assistant",
+        "content": [
+          "Soy Marta de la Universidad Internacional de La Rioja. He revisado tu caso con Direcci\u00f3n Acad\u00e9mica del m\u00e1ster y ha salido una novedad que por tu perfil encaja bastante, por eso te llamo."
+        ],
+        "interrupted": true,
+        "transcript_confidence": null,
+        "extra": {},
+        "metrics": {
+          "started_speaking_at": 1770471477.230236,
+          "stopped_speaking_at": 1770471487.6036358,
+          "llm_node_ttft": 0.4747614330262877,
+          "tts_node_ttfb": 0.35366020898800343,
+          "e2e_latency": 1.3416924476623535
+        },
+        "created_at": 1770471476.4053848,
+        "hash": null
+      },
+      "created_at": 1770471487.6040883
+    },
+    {
+      "type": "agent_state_changed",
+      "old_state": "speaking",
+      "new_state": "listening",
+      "created_at": 1770471487.6042986
+    },
+    {
+      "type": "close",
+      "error": null,
+      "reason": "participant_disconnected",
+      "created_at": 1770471489.6092448
+    }
+  ],
+  "audio_recording_path": null,
+  "audio_recording_started_at": null,
+  "options": {
+    "allow_interruptions": true,
+    "discard_audio_if_uninterruptible": true,
+    "min_interruption_duration": 0.5,
+    "min_interruption_words": 1,
+    "min_endpointing_delay": 0.1,
+    "max_endpointing_delay": 0.5,
+    "max_tool_steps": 3,
+    "user_away_timeout": 7.0,
+    "min_consecutive_speech_delay": 0.0,
+    "preemptive_generation": true
+  },
+  "chat_history": {
+    "items": [
+      {
+        "id": "item_d9aba2ee882b",
+        "type": "agent_handoff",
+        "new_agent_id": "granero_agent",
+        "created_at": 1770471466.7696266
+      },
+      {
+        "id": "item_0ba52ce4c5a2",
+        "type": "agent_handoff",
+        "old_agent_id": "granero_agent",
+        "new_agent_id": "collect_consent",
+        "created_at": 1770471466.7978513
+      },
+      {
+        "id": "item_5f65efeb3c20",
+        "type": "message",
+        "role": "assistant",
+        "content": [
+          "Hola, \u00bfAlfonso Jerez Izquierdo?"
+        ],
+        "interrupted": false,
+        "extra": {},
+        "metrics": {
+          "llm_node_ttft": 0.6121752450126223,
+          "tts_node_ttfb": 0.2800628640106879
+        },
+        "created_at": 1770471466.9121864
+      },
+      {
+        "id": "item_20a9765bb386",
+        "type": "message",
+        "role": "user",
+        "content": [
+          "Ok,"
+        ],
+        "interrupted": false,
+        "transcript_confidence": 0.5385742,
+        "extra": {},
+        "metrics": {
+          "started_speaking_at": 1770471472.7377415,
+          "stopped_speaking_at": 1770471474.7387924,
+          "transcription_delay": 0.17060542106628418,
+          "end_of_turn_delay": 0.22448062896728516,
+          "on_user_turn_completed_delay": 1.7170095816254616e-06
+        },
+        "created_at": 1770471474.9094877
+      },
+      {
+        "id": "item_f08b2e5ddbdf",
+        "type": "message",
+        "role": "assistant",
+        "content": [
+          "Soy"
+        ],
+        "interrupted": true,
+        "extra": {},
+        "metrics": {
+          "started_speaking_at": 1770471475.759357,
+          "stopped_speaking_at": 1770471476.3668787,
+          "llm_node_ttft": 0.47376376698957756,
+          "tts_node_ttfb": 0.3743413260090165,
+          "e2e_latency": 1.0205645561218262
+        },
+        "created_at": 1770471474.9645655
+      },
+      {
+        "id": "item_02e1aecd7ceb",
+        "type": "message",
+        "role": "user",
+        "content": [
+          "Hola, buenas."
+        ],
+        "interrupted": false,
+        "transcript_confidence": 0.953125,
+        "extra": {},
+        "metrics": {
+          "started_speaking_at": 1770471475.2384772,
+          "stopped_speaking_at": 1770471475.8885436,
+          "transcription_delay": 0.47594571113586426,
+          "end_of_turn_delay": 0.5118849277496338,
+          "on_user_turn_completed_delay": 1.508975401520729e-06
+        },
+        "created_at": 1770471476.4008965
+      },
+      {
+        "id": "item_ab5c33227455",
+        "type": "message",
+        "role": "assistant",
+        "content": [
+          "Soy Marta de la Universidad Internacional de La Rioja. He revisado tu caso con Direcci\u00f3n Acad\u00e9mica del m\u00e1ster y ha salido una novedad que por tu perfil encaja bastante, por eso te llamo."
+        ],
+        "interrupted": true,
+        "extra": {},
+        "metrics": {
+          "started_speaking_at": 1770471477.230236,
+          "stopped_speaking_at": 1770471487.6036358,
+          "llm_node_ttft": 0.4747614330262877,
+          "tts_node_ttfb": 0.35366020898800343,
+          "e2e_latency": 1.3416924476623535
+        },
+        "created_at": 1770471476.4053848
+      }
+    ]
+  },
+  "timestamp": 1770471489.647108
+}

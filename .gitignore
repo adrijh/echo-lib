@@ -214,7 +214,6 @@ scripts/.env
 .vscode/
 
 chroma*
-data/
 
 secrets/
 
