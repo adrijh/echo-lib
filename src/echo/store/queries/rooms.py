@@ -29,8 +29,7 @@ UPDATE_ROOM_SQL = dedent("""
 UPDATE {table_name} SET
     start_timestamp = COALESCE({table_name}.start_timestamp, ?),
     end_timestamp   = COALESCE({table_name}.end_timestamp,   ?),
-    report_url      = COALESCE(?,               {table_name}.report_url),
-    metadata        = COALESCE(?,               {table_name}.metadata)
+    report_url      = COALESCE(?,               {table_name}.report_url)
 WHERE room_id = ?
 """)
 

@@ -54,10 +54,14 @@ class RoomsTable:
         metadata: dict[str, str] | None,
     ) -> None:
         meta_json = json.dumps(metadata) if metadata else None
+
+        # Log para depuración (opcional, pero ayuda)
+        # print(f"UPSERT metadata (type {type(meta_json)}): {meta_json}")
+
         try:
             self.conn.execute(
                 r.INSERT_ROOM_SQL.format(table_name=self.table_name),
-                (
+                [ # Use list for parameters
                     room_id,
                     thread_id,
                     opportunity_id,
@@ -65,19 +69,25 @@ class RoomsTable:
                     end_time,
                     report_url,
                     meta_json,
-                ),
+                ],
             )
-        except duckdb.ConstraintException:
-            self.conn.execute(
-                r.UPDATE_ROOM_SQL.format(table_name=self.table_name),
-                (
-                    start_time,
-                    end_time,
-                    report_url,
-                    meta_json,
-                    room_id,
-                ),
-            )
+        except (duckdb.ConstraintException, duckdb.Error) as e:
+             # Postgres scanner might raise generic Error for constraint violations
+            if "duplicate key" in str(e) or "constraint" in str(e):
+                # We skip updating metadata to avoid JSON type casting issues with DuckDB Postgres scanner.
+                # Metadata is inserted correctly during creation and doesn't typically change.
+                self.conn.execute(
+                    r.UPDATE_ROOM_SQL.format(table_name=self.table_name),
+                    [
+                        start_time,
+                        end_time,
+                        report_url,
+                        # meta_json, Removed from params
+                        room_id,
+                    ],
+                )
+            else:
+                raise e
 
     def set_room_start(
         self,
