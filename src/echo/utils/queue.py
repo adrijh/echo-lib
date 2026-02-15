@@ -101,3 +101,20 @@ class RabbitQueue:
             message,
             routing_key=self.queue.name,
         )
+
+    async def send_event_with_delay(
+        self,
+        event: events.BaseEvent,
+        delay_ms: int,
+    ) -> None:
+        message = aio_pika.Message(
+            body=event.model_dump_json().encode(),
+            delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
+            content_type="application/json",
+            expiration=delay_ms,
+        )
+
+        await self.channel.default_exchange.publish(
+            message,
+            routing_key=self.queue.name,
+        )

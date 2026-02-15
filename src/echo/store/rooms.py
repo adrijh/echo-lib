@@ -10,6 +10,7 @@ from echo.store.queries import rooms as r
 
 type JsonType = dict[str, Any] | list[dict[str, Any]] | None
 
+
 class RoomsRow(BaseModel):
     room_id: str
     opportunity_id: str
@@ -61,7 +62,7 @@ class RoomsTable:
         try:
             self.conn.execute(
                 r.INSERT_ROOM_SQL.format(table_name=self.table_name),
-                [ # Use list for parameters
+                [  # Use list for parameters
                     room_id,
                     thread_id,
                     opportunity_id,
@@ -72,7 +73,7 @@ class RoomsTable:
                 ],
             )
         except (duckdb.ConstraintException, duckdb.Error) as e:
-             # Postgres scanner might raise generic Error for constraint violations
+            # Postgres scanner might raise generic Error for constraint violations
             if "duplicate key" in str(e) or "constraint" in str(e):
                 # We skip updating metadata to avoid JSON type casting issues with DuckDB Postgres scanner.
                 # Metadata is inserted correctly during creation and doesn't typically change.
