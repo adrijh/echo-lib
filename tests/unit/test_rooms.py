@@ -1,12 +1,11 @@
 from datetime import timedelta
-from dotenv import load_dotenv
 from uuid import uuid4
 
 import pytest
+from dotenv import load_dotenv
 
 import echo.events.v1 as events
 from echo.store.store import DuckDBStore, Store
-
 
 load_dotenv()
 
