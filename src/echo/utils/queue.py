@@ -54,6 +54,21 @@ class RabbitConnection:
 
         return RabbitQueue(self, channel=channel, queue=queue)
 
+    async def get_queue(
+        self,
+        name: str,
+        *,
+        prefetch: int = 1,
+    ) -> RabbitQueue:
+        channel = await self._conn.channel()
+        await channel.set_qos(prefetch_count=prefetch)
+
+        queue = await channel.get_queue(name)
+
+        self._channels.append(channel)
+
+        return RabbitQueue(self, channel=channel, queue=queue)
+
     async def close(self) -> None:
         for ch in self._channels:
             await ch.close()
