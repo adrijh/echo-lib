@@ -90,28 +90,18 @@ class RabbitQueue:
             password=os.environ["RABBITMQ_PASSWORD"],
         )
 
-    async def send_event(self, event: events.BaseEvent) -> None:
-        message = aio_pika.Message(
-            body=event.model_dump_json().encode(),
-            delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
-            content_type="application/json",
-        )
-
-        await self.channel.default_exchange.publish(
-            message,
-            routing_key=self.queue.name,
-        )
-
-    async def send_event_with_delay(
+    async def send_event(
         self,
         event: events.BaseEvent,
-        delay_ms: int,
+        delay_ms: int | None = None,
     ) -> None:
+        body: bytes = event.model_dump_json().encode()
+
         message = aio_pika.Message(
-            body=event.model_dump_json().encode(),
+            body=body,
             delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
             content_type="application/json",
-            expiration=delay_ms,
+            expiration=delay_ms if delay_ms is not None else None,
         )
 
         await self.channel.default_exchange.publish(
