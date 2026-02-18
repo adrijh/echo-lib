@@ -1,6 +1,7 @@
-from datetime import datetime
 import json
+from datetime import datetime
 from typing import Any
+
 import duckdb
 from pydantic import BaseModel, field_serializer
 
@@ -27,26 +28,12 @@ class ScheduleCallRow(BaseModel):
 class ScheduleCallsTable:
     def __init__(self, conn: duckdb.DuckDBPyConnection, is_postgres: bool) -> None:
         self.conn = conn
-        self.table_name = (
-            "postgres.schedule_calls" if is_postgres else "schedule_calls"
-        )
+        self.table_name = "postgres.schedule_calls" if is_postgres else "schedule_calls"
 
     def setup_table(self) -> None:
-        self.conn.sql(
-            sc.CREATE_SCHEDULE_CALLS_TABLE_SQL.format(
-                table_name=self.table_name
-            )
-        )
-        self.conn.sql(
-            sc.CREATE_SCHEDULE_CALLS_STATUS_INDEX_SQL.format(
-                table_name=self.table_name
-            )
-        )
-        self.conn.sql(
-            sc.CREATE_SCHEDULE_CALLS_SCHEDULED_AT_INDEX_SQL.format(
-                table_name=self.table_name
-            )
-        )
+        self.conn.sql(sc.CREATE_SCHEDULE_CALLS_TABLE_SQL.format(table_name=self.table_name))
+        self.conn.sql(sc.CREATE_SCHEDULE_CALLS_STATUS_INDEX_SQL.format(table_name=self.table_name))
+        self.conn.sql(sc.CREATE_SCHEDULE_CALLS_SCHEDULED_AT_INDEX_SQL.format(table_name=self.table_name))
 
     def upsert_schedule_call(
         self,
@@ -55,26 +42,34 @@ class ScheduleCallsTable:
         metadata: dict[str, Any] | None,
         status: str = "pending",
     ) -> None:
-        meta_json = metadata if metadata else None
+        meta_json = json.dumps(metadata) if metadata else None
 
-        self.conn.execute(
-            sc.UPSERT_SCHEDULE_CALL_SQL.format(
-                table_name=self.table_name
-            ),
-            (
-                opportunity_id,
-                scheduled_at,
-                meta_json,
-                status,
-            ),
-        )
+        try:
+            self.conn.execute(
+                sc.INSERT_SCHEDULE_CALL_SQL.format(table_name=self.table_name),
+                [
+                    opportunity_id,
+                    scheduled_at,
+                    meta_json,
+                    status,
+                ],
+            )
+        except (duckdb.ConstraintException, duckdb.Error) as e:
+            if "duplicate key" in str(e) or "constraint" in str(e):
+                self.conn.execute(
+                    sc.UPDATE_SCHEDULE_CALL_SQL.format(table_name=self.table_name),
+                    [
+                        scheduled_at,
+                        meta_json,
+                        status,
+                        opportunity_id,
+                    ],
+                )
+            else:
+                raise e
 
     def get_ready_calls(self) -> list[ScheduleCallRow]:
-        rows = self.conn.execute(
-            sc.GET_READY_SCHEDULE_CALLS_SQL.format(
-                table_name=self.table_name
-            )
-        ).fetchall()
+        rows = self.conn.execute(sc.GET_READY_SCHEDULE_CALLS_SQL.format(table_name=self.table_name)).fetchall()
 
         result = []
         for r in rows:
@@ -92,8 +87,6 @@ class ScheduleCallsTable:
 
     def mark_finished(self, opportunity_id: str) -> None:
         self.conn.execute(
-            sc.UPDATE_SCHEDULE_CALL_STATUS_SQL.format(
-                table_name=self.table_name
-            ),
+            sc.UPDATE_SCHEDULE_CALL_STATUS_SQL.format(table_name=self.table_name),
             ("finished", opportunity_id),
         )

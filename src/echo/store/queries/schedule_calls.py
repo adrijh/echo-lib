@@ -1,11 +1,10 @@
 from textwrap import dedent
 
-
 CREATE_SCHEDULE_CALLS_TABLE_SQL = dedent("""
 CREATE TABLE IF NOT EXISTS {table_name} (
     opportunity_id    TEXT PRIMARY KEY,
     scheduled_at      TIMESTAMPTZ NOT NULL,
-    metadata          JSONB,
+    metadata          JSON,
     status            TEXT NOT NULL,
     added_timestamp   TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_timestamp TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -24,8 +23,7 @@ CREATE INDEX IF NOT EXISTS idx_schedule_calls_scheduled_at
 ON {table_name} (scheduled_at);
 """)
 
-
-UPSERT_SCHEDULE_CALL_SQL = dedent("""
+INSERT_SCHEDULE_CALL_SQL = dedent("""
 INSERT INTO {table_name} (
     opportunity_id,
     scheduled_at,
@@ -34,15 +32,18 @@ INSERT INTO {table_name} (
     added_timestamp,
     updated_timestamp
 )
-VALUES (?, ?, ?, ?, now(), now())
-ON CONFLICT (opportunity_id)
-DO UPDATE SET
-    scheduled_at      = EXCLUDED.scheduled_at,
-    metadata          = EXCLUDED.metadata,
-    status            = EXCLUDED.status,
-    updated_timestamp = now();
+VALUES (?, ?, ?, ?, now(), now());
 """)
 
+UPDATE_SCHEDULE_CALL_SQL = dedent("""
+UPDATE {table_name}
+SET
+    scheduled_at = ?,
+    metadata = ?,
+    status = ?,
+    updated_timestamp = now()
+WHERE opportunity_id = ?;
+""")
 
 GET_READY_SCHEDULE_CALLS_SQL = dedent("""
 SELECT
