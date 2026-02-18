@@ -22,5 +22,5 @@ async def get_blob_content(blob_url: str, sas: bool = False) -> bytes | None:
             return await stream.readall()
 
     except Exception:
-        log.exception(f"Could not download blob with url '{blob_url}'")
+        log.error(f"Could not download blob with url '{blob_url}'")
         return None
