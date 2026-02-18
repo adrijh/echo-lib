@@ -143,6 +143,23 @@ class RoomsTable:
             None,
         )
 
+    def get_room(self, room_id: str) -> RoomsRow | None:
+        query = r.GET_ROOM_SQL.format(table_name=self.table_name)
+        row = self.conn.execute(query, [room_id]).fetchone()
+
+        if not row:
+            return None
+
+        return RoomsRow(
+            room_id=row[0],
+            thread_id=row[1],
+            opportunity_id=row[2],
+            start_time=row[3],
+            end_time=row[4],
+            report_url=row[5],
+            metadata=row[6],
+        )
+
     def get_rooms(self) -> list[RoomsRow]:
         data = self.conn.sql(r.LIST_ROOMS_SQL.format(table_name=self.table_name)).fetchall()
         return [

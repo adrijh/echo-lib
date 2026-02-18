@@ -37,6 +37,19 @@ GET_METADATA_SQL = dedent("""
 SELECT metadata FROM {table_name} WHERE room_id = ?
 """)
 
+GET_ROOM_SQL = dedent("""
+SELECT
+    room_id,
+    thread_id,
+    opportunity_id,
+    start_timestamp,
+    end_timestamp,
+    report_url,
+    metadata
+FROM {table_name}
+WHERE room_id = ?;
+""")
+
 LIST_ROOMS_SQL = dedent("""
 SELECT
     room_id,
