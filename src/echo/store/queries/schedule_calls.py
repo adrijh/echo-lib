@@ -5,7 +5,7 @@ CREATE_SCHEDULE_CALLS_TABLE_SQL = dedent("""
 CREATE TABLE IF NOT EXISTS {table_name} (
     opportunity_id    TEXT PRIMARY KEY,
     scheduled_at      TIMESTAMPTZ NOT NULL,
-    metadata          JSON,
+    metadata          JSONB,
     status            TEXT NOT NULL,
     added_timestamp   TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_timestamp TIMESTAMPTZ NOT NULL DEFAULT now()

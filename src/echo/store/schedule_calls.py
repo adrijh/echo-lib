@@ -55,7 +55,7 @@ class ScheduleCallsTable:
         metadata: dict[str, Any] | None,
         status: str = "pending",
     ) -> None:
-        meta_json = json.dumps(metadata) if metadata else None
+        meta_json = metadata if metadata else None
 
         self.conn.execute(
             sc.UPSERT_SCHEDULE_CALL_SQL.format(
@@ -82,7 +82,7 @@ class ScheduleCallsTable:
                 ScheduleCallRow(
                     opportunity_id=r[0],
                     scheduled_at=r[1],
-                    metadata=json.loads(r[2]) if r[2] else None,
+                    metadata=r[2] if isinstance(r[2], dict) else (json.loads(r[2]) if r[2] else None),
                     status=r[3],
                     added_timestamp=r[4],
                     updated_timestamp=r[5],
