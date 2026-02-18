@@ -6,6 +6,7 @@ from echo.store.analytics import AnalyticsTable
 from echo.store.context import ContextTable
 from echo.store.queries.postgres import ATTACH_POSTGRES_SQL, CREATE_POSTGRES_SECRET_SQL
 from echo.store.rooms import RoomsTable
+from echo.store.schedule_calls import ScheduleCallsTable
 from echo.store.users import UsersTable
 
 
@@ -14,6 +15,7 @@ class Store(Protocol):
     users: UsersTable
     context: ContextTable
     analytics: AnalyticsTable
+    schedule_calls: ScheduleCallsTable
 
 
 class DuckDBStore:
@@ -28,6 +30,7 @@ class DuckDBStore:
         self.users = UsersTable(conn, is_postgres)
         self.context = ContextTable(conn, is_postgres)
         self.analytics = AnalyticsTable(conn, is_postgres)
+        self.schedule_calls = ScheduleCallsTable(conn, is_postgres)
 
         if do_setup:
             self._setup_tables()
@@ -57,3 +60,4 @@ class DuckDBStore:
         self.users.setup_table()
         self.context.setup_table()
         self.analytics.setup_table()
+        self.schedule_calls.setup_table()
