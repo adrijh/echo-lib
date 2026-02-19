@@ -68,3 +68,8 @@ SET
 WHERE opportunity_id = ?
   AND status = 'pending';
 """)
+
+DELETE_SCHEDULE_CALL_SQL = dedent("""
+DELETE FROM {table_name}
+WHERE opportunity_id = ?;
+""")

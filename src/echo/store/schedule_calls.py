@@ -57,12 +57,17 @@ class ScheduleCallsTable:
         except (duckdb.ConstraintException, duckdb.Error) as e:
             if "duplicate key" in str(e) or "constraint" in str(e):
                 self.conn.execute(
-                    sc.UPDATE_SCHEDULE_CALL_SQL.format(table_name=self.table_name),
+                    sc.DELETE_SCHEDULE_CALL_SQL.format(table_name=self.table_name),
+                    [opportunity_id],
+                )
+
+                self.conn.execute(
+                    sc.INSERT_SCHEDULE_CALL_SQL.format(table_name=self.table_name),
                     [
+                        opportunity_id,
                         scheduled_at,
                         meta_json,
                         status,
-                        opportunity_id,
                     ],
                 )
             else:
