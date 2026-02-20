@@ -1,52 +1,108 @@
 import logging
 import os
+import sys
+
+from opentelemetry.sdk._logs import LoggingHandler
+from typing_extensions import deprecated
 
 LOG_LEVELS_MAPPING = {
+    "CRITICAL": logging.CRITICAL,
+    "ERROR": logging.ERROR,
+    "WARNING": logging.WARNING,
+    "WARN": logging.WARNING,
     "INFO": logging.INFO,
     "DEBUG": logging.DEBUG,
-    "WARN": logging.WARN,
-    "WARNING": logging.WARNING,
-    "ERROR": logging.ERROR,
 }
 
+_DEFAULT_FORMAT = "%(asctime)s [%(levelname)s] %(name)s - %(message)s"
+_DEFAULT_DATEFMT = "%Y-%m-%d %H:%M:%S"
 
+_logging_configured = False
+
+
+@deprecated("Use get_logger instead.")
 def configure_logger(
-    name: str = "root",
+    name: str,
     log_level: str = "INFO",
     ignore_env_vars: bool = False,
+    enable_stdout: bool = True,
 ) -> logging.Logger:
-    log = logging.getLogger(name)
-    level = _get_log_level(log_level)
+    return get_logger(
+        name=name,
+        log_level=log_level,
+        ignore_env_vars=ignore_env_vars,
+        enable_stdout=enable_stdout,
+    )
 
+def get_logger(
+    name: str,
+    log_level: str = "INFO",
+    ignore_env_vars: bool = False,
+    enable_stdout: bool = True,
+) -> logging.Logger:
+    """Configure logging (once) and return a named logger."""
+    _configure_root_logging(
+        log_level=log_level,
+        ignore_env_vars=ignore_env_vars,
+        enable_stdout=enable_stdout,
+    )
+
+    logger = logging.getLogger(name)
+    logger.setLevel(_resolve_log_level(log_level, ignore_env_vars))
+    logger.propagate = True
+
+    return logger
+
+
+def _configure_root_logging(
+    *,
+    log_level: str,
+    ignore_env_vars: bool,
+    enable_stdout: bool,
+) -> None:
+    global _logging_configured
+
+    if _logging_configured:
+        return
+
+    level = _resolve_log_level(log_level, ignore_env_vars)
+    root = logging.getLogger()
+    root.setLevel(level)
+
+    if enable_stdout and not _has_stream_handler(root):
+        stream_handler = logging.StreamHandler(sys.stdout)
+        stream_handler.setFormatter(
+            logging.Formatter(
+                fmt=_DEFAULT_FORMAT,
+                datefmt=_DEFAULT_DATEFMT,
+            )
+        )
+        stream_handler.setLevel(level)
+        root.addHandler(stream_handler)
+
+    enable_otel = os.getenv("ENABLE_OTEL_LOGGING", "true").lower() == "true"
+    if enable_otel and not _has_otel_handler(root):
+        otel_handler = LoggingHandler(level=level)
+        root.addHandler(otel_handler)
+
+    _logging_configured = True
+
+
+def _resolve_log_level(log_level: str, ignore_env_vars: bool) -> int:
     if not ignore_env_vars:
-        try:
-            log_level_env = os.getenv("LOG_LEVEL", log_level)
-            level = _get_log_level(log_level_env)
-        except ValueError:
-            pass
+        log_level = os.getenv("LOG_LEVEL", log_level)
 
-    return __logger_default_configuration(log, level)
-
-
-def _get_log_level(log_level: str) -> int:
-    level = LOG_LEVELS_MAPPING.get(log_level)
-
-    if not level:
-        raise ValueError(f"Allowed log levels: {LOG_LEVELS_MAPPING.keys()}")
-
+    level = LOG_LEVELS_MAPPING.get(log_level.upper())
+    if level is None:
+        raise ValueError(
+            f"Allowed log levels: {list(LOG_LEVELS_MAPPING.keys())}"
+        )
     return level
 
 
-def __logger_default_configuration(
-    logger: logging.Logger,
-    log_level: int = logging.INFO,
-) -> logging.Logger:
-    if log_level not in LOG_LEVELS_MAPPING.values():
-        raise ValueError(f"Allowed log levels: {LOG_LEVELS_MAPPING.keys()}")
+def _has_stream_handler(logger: logging.Logger) -> bool:
+    return any(isinstance(h, logging.StreamHandler) for h in logger.handlers)
 
-    ch = logging.StreamHandler()
-    ch.setFormatter(logging.Formatter("%(levelname)-8s %(message)s"))
-    logger.setLevel(log_level)
-    logger.addHandler(ch)
-    logger.propagate = False
-    return logger
+
+def _has_otel_handler(logger: logging.Logger) -> bool:
+    return any(isinstance(h, LoggingHandler) for h in logger.handlers)
