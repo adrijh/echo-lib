@@ -60,5 +60,6 @@ SELECT
     report_url,
     metadata
 FROM {table_name}
+where start_timestamp IS NOT NULL
 ORDER BY start_timestamp DESC NULLS LAST;
 """)
