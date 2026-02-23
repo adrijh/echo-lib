@@ -1,25 +1,26 @@
+from collections.abc import AsyncIterator
 from datetime import timedelta
 from uuid import uuid4
 
 import pytest
+import pytest_asyncio
 from dotenv import load_dotenv
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 import echo.events.v1 as events
-from echo.store.store import DuckDBStore, Store
+from echo.store.store import PostgresStore, Store
 
 load_dotenv()
 
 
-@pytest.fixture
-def db() -> Store:
-    try:
-        return DuckDBStore.with_postgres(do_setup=True)
-    except Exception:
-        print("Could not connect to Postgres, falling back to in-memory DuckDB")
-        return DuckDBStore.in_memory(do_setup=True)
+@pytest_asyncio.fixture
+async def store(sessionmaker: async_sessionmaker[AsyncSession]) -> AsyncIterator[Store]:
+    async with sessionmaker() as session:
+        yield PostgresStore(session)
 
 
-def test_room_start(db: Store) -> None:
+@pytest.mark.asyncio
+async def test_room_start(store: PostgresStore) -> None:
     room_id = str(uuid4())
     opportunity_id = str(uuid4())
     thread_id = uuid4()
@@ -30,25 +31,28 @@ def test_room_start(db: Store) -> None:
     )
     metadata = {"key": "value"}
 
-    db.rooms.set_room_start(
+    await store.rooms.set_room_start(
         room_id=start_event.room_id,
         thread_id=thread_id,
         opportunity_id=start_event.opportunity_id,
-        start_time=start_event.timestamp,
+        start_timestamp=start_event.timestamp,
         metadata=metadata,
     )
 
-    rows = db.rooms.get_rooms()
+    await store.session.commit()
+
+    rows = await store.rooms.get_rooms()
 
     assert len(rows) == 1
     assert rows[0].room_id == start_event.room_id
     assert rows[0].opportunity_id == start_event.opportunity_id
     assert rows[0].thread_id == thread_id
-    assert rows[0].start_time == start_event.timestamp
-    assert rows[0].metadata == metadata
+    assert rows[0].start_timestamp == start_event.timestamp
+    assert rows[0].metadata_ == metadata
 
 
-def test_room_start_end(db: Store) -> None:
+@pytest.mark.asyncio
+async def test_room_start_end(store: PostgresStore) -> None:
     room_id = str(uuid4())
     opportunity_id = str(uuid4())
     thread_id = uuid4()
@@ -68,35 +72,39 @@ def test_room_start_end(db: Store) -> None:
     )
     metadata_end = {"key2": "value2"}
 
-    db.rooms.set_room_start(
+    await store.rooms.set_room_start(
         room_id=start_event.room_id,
         thread_id=thread_id,
         opportunity_id=start_event.opportunity_id,
-        start_time=start_event.timestamp,
+        start_timestamp=start_event.timestamp,
         metadata=metadata_start,
     )
+    await store.session.commit()
 
-    db.rooms.set_room_end(
+    await store.rooms.set_room_end(
         room_id=end_event.room_id,
         thread_id=thread_id,
         opportunity_id=end_event.opportunity_id,
-        end_time=end_event.timestamp,
+        end_timestamp=end_event.timestamp,
         metadata=metadata_end,
     )
+    await store.session.commit()
 
-    db.rooms.set_room_report(
+    await store.rooms.set_room_report(
         room_id=end_event.room_id,
         thread_id=thread_id,
         opportunity_id=end_event.opportunity_id,
         report_url=end_event.report_url,
     )
 
-    rows = db.rooms.get_rooms()
+    await store.session.commit()
 
-    assert len(rows) == 1
-    assert rows[0].room_id == end_event.room_id
-    assert rows[0].opportunity_id == end_event.opportunity_id
-    assert rows[0].start_time == start_event.timestamp
-    assert rows[0].end_time == end_event.timestamp
-    assert rows[0].report_url == end_event.report_url
-    assert rows[0].metadata == metadata_end
+    rows = await store.rooms.get_rooms()
+
+    assert len(rows) == 2
+    assert rows[-1].room_id == end_event.room_id
+    assert rows[-1].opportunity_id == end_event.opportunity_id
+    assert rows[-1].start_timestamp == start_event.timestamp
+    assert rows[-1].end_timestamp == end_event.timestamp
+    assert rows[-1].report_url == end_event.report_url
+    assert rows[-1].metadata_ == metadata_end

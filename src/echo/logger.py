@@ -34,6 +34,7 @@ def configure_logger(
         enable_stdout=enable_stdout,
     )
 
+
 def get_logger(
     name: str,
     log_level: str = "INFO",
@@ -94,9 +95,7 @@ def _resolve_log_level(log_level: str, ignore_env_vars: bool) -> int:
 
     level = LOG_LEVELS_MAPPING.get(log_level.upper())
     if level is None:
-        raise ValueError(
-            f"Allowed log levels: {list(LOG_LEVELS_MAPPING.keys())}"
-        )
+        raise ValueError(f"Allowed log levels: {list(LOG_LEVELS_MAPPING.keys())}")
     return level
 
 

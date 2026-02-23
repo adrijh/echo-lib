@@ -30,7 +30,7 @@ def format_input(input: dict[str, Chat]) -> dict[str, Any]:
         if not message["content"]:
             continue
 
-        text += f"{message["role"]}: {message["content"]}\n"
+        text += f"{message['role']}: {message['content']}\n"
 
     return {
         "content": text,

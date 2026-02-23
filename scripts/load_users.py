@@ -1,9 +1,13 @@
+import asyncio
 import re
 import uuid
 from pathlib import Path
+from typing import cast
 
 import pandas as pd
 from dotenv import load_dotenv
+
+from echo.store.store import PostgresStore
 
 ENV_FILE = Path(__file__).parent / ".." / ".env"
 load_dotenv(ENV_FILE)
@@ -72,10 +76,11 @@ def clean_phone(value: str | None, mobile_only: bool = True) -> str | None:
         ):
             return None
 
-    return phonenumbers.format_number(
+    phone_number = phonenumbers.format_number(
         parsed,
         phonenumbers.PhoneNumberFormat.E164,
     )
+    return cast(str | None, phone_number)
 
 
 def get_trimmed(row: pd.Series, key: str) -> str | None:
@@ -89,34 +94,31 @@ def get_trimmed(row: pd.Series, key: str) -> str | None:
     if value == "" or value.lower() == "<null>":
         return None
 
-    return value
+    return cast(str | None, value)
 
 
-def main() -> None:
-    from echo.store.store import DuckDBStore
-
+async def main() -> None:
     excel_path = Path(__file__).parent / ".." / "user_data.xlsx"
     df = pd.read_excel(excel_path)
 
-    store = DuckDBStore.with_postgres(do_setup=True)
+    async with PostgresStore.open() as store:
+        for _, row in df.iterrows():
+            user_id = uuid.uuid4()
 
-    for _, row in df.iterrows():
-        user_id = str(uuid.uuid4())
-
-        store.users.upsert_user(
-            user_id=user_id,
-            contact_id=get_trimmed(row, "CONTACTID"),
-            opportunity_id=get_trimmed(row, "OPPORTUNITYID"),
-            name=get_trimmed(row, "FIRSTNAME"),
-            last_name=get_trimmed(row, "LASTNAME"),
-            phone_number=clean_phone(get_trimmed(row, "mobile")),
-            mail=clean_email(get_trimmed(row, "EMAIL")),
-            market=get_trimmed(row, "MERCADO"),
-            faculty=get_trimmed(row, "FACULTAD"),
-            plancode=get_trimmed(row, "PLANCODE"),
-            track=get_trimmed(row, "track"),
-        )
+            await store.users.upsert_user(
+                user_id=user_id,
+                contact_id=get_trimmed(row, "CONTACTID"),
+                opportunity_id=get_trimmed(row, "OPPORTUNITYID"),
+                name=get_trimmed(row, "FIRSTNAME"),
+                last_name=get_trimmed(row, "LASTNAME"),
+                phone_number=clean_phone(get_trimmed(row, "mobile")),
+                mail=clean_email(get_trimmed(row, "EMAIL")),
+                market=get_trimmed(row, "MERCADO"),
+                faculty=get_trimmed(row, "FACULTAD"),
+                plancode=get_trimmed(row, "PLANCODE"),
+                track=get_trimmed(row, "track"),
+            )
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

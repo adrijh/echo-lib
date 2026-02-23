@@ -1,97 +1,54 @@
-import json
-from datetime import datetime
-from typing import Any
+from datetime import UTC, datetime
+from typing import Any, cast
 
-import duckdb
-from pydantic import BaseModel, field_serializer
+from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from echo.store.queries import schedule_calls as sc
-
-
-class ScheduleCallRow(BaseModel):
-    opportunity_id: str
-    scheduled_at: datetime
-    metadata: dict[str, Any] | None
-    status: str
-    added_timestamp: datetime
-    updated_timestamp: datetime
-
-    @field_serializer(
-        "scheduled_at",
-        "added_timestamp",
-        "updated_timestamp",
-    )
-    def serialize_ts(self, v: datetime | None) -> float | None:
-        return None if v is None else v.timestamp()
+from echo.db.models.scheduled_call import ScheduledCall
 
 
 class ScheduleCallsTable:
-    def __init__(self, conn: duckdb.DuckDBPyConnection, is_postgres: bool) -> None:
-        self.conn = conn
-        self.table_name = "postgres.schedule_calls" if is_postgres else "schedule_calls"
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
 
-    def setup_table(self) -> None:
-        self.conn.sql(sc.CREATE_SCHEDULE_CALLS_TABLE_SQL.format(table_name=self.table_name))
-        self.conn.sql(sc.CREATE_SCHEDULE_CALLS_STATUS_INDEX_SQL.format(table_name=self.table_name))
-        self.conn.sql(sc.CREATE_SCHEDULE_CALLS_SCHEDULED_AT_INDEX_SQL.format(table_name=self.table_name))
-
-    def upsert_schedule_call(
+    async def upsert_schedule_call(
         self,
         opportunity_id: str,
         scheduled_at: datetime,
         metadata: dict[str, Any] | None,
         status: str = "pending",
     ) -> None:
-        meta_json = json.dumps(metadata) if metadata else None
-
-        try:
-            self.conn.execute(
-                sc.INSERT_SCHEDULE_CALL_SQL.format(table_name=self.table_name),
-                [
-                    opportunity_id,
-                    scheduled_at,
-                    meta_json,
-                    status,
-                ],
+        stmt = (
+            insert(ScheduledCall)
+            .values(
+                opportunity_id=opportunity_id,
+                scheduled_at=scheduled_at,
+                metadata_=metadata,
+                status=status,
             )
-        except (duckdb.ConstraintException, duckdb.Error) as e:
-            if "duplicate key" in str(e) or "constraint" in str(e):
-                self.conn.execute(
-                    sc.DELETE_SCHEDULE_CALL_SQL.format(table_name=self.table_name),
-                    [opportunity_id],
-                )
-
-                self.conn.execute(
-                    sc.INSERT_SCHEDULE_CALL_SQL.format(table_name=self.table_name),
-                    [
-                        opportunity_id,
-                        scheduled_at,
-                        meta_json,
-                        status,
-                    ],
-                )
-            else:
-                raise e
-
-    def get_ready_calls(self) -> list[ScheduleCallRow]:
-        rows = self.conn.execute(sc.GET_READY_SCHEDULE_CALLS_SQL.format(table_name=self.table_name)).fetchall()
-
-        result = []
-        for r in rows:
-            result.append(
-                ScheduleCallRow(
-                    opportunity_id=r[0],
-                    scheduled_at=r[1],
-                    metadata=r[2] if isinstance(r[2], dict) else (json.loads(r[2]) if r[2] else None),
-                    status=r[3],
-                    added_timestamp=r[4],
-                    updated_timestamp=r[5],
-                )
+            .on_conflict_do_update(
+                index_elements=["opportunity_id"],
+                set_={
+                    "scheduled_at": scheduled_at,
+                    "metadata_": metadata,
+                    "status": status,
+                },
             )
-        return result
-
-    def mark_finished(self, opportunity_id: str) -> None:
-        self.conn.execute(
-            sc.UPDATE_SCHEDULE_CALL_STATUS_SQL.format(table_name=self.table_name),
-            ("finished", opportunity_id),
         )
+        await self.session.execute(stmt)
+
+    async def get_ready_calls(self) -> list[ScheduledCall]:
+        stmt = select(ScheduledCall).where(
+            ScheduledCall.status == "pending",
+            ScheduledCall.scheduled_at <= datetime.now(UTC),
+        )
+        result = await self.session.execute(stmt)
+        return cast(list[ScheduledCall], result.scalars().all())
+
+    async def mark_finished(self, opportunity_id: str) -> None:
+        result = await self.session.execute(select(ScheduledCall).where(ScheduledCall.opportunity_id == opportunity_id))
+        row = cast(ScheduledCall | None, result.scalar_one_or_none())
+        if row is None:
+            raise ValueError(f"ScheduleCall {opportunity_id} not found")
+        row.status = "finished"

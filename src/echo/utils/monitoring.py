@@ -70,9 +70,7 @@ def setup_logging(
     logger_provider = LoggerProvider(resource=resource)
 
     exporter = OTLPLogExporter(endpoint=collector_endpoint)
-    logger_provider.add_log_record_processor(
-        BatchLogRecordProcessor(exporter)
-    )
+    logger_provider.add_log_record_processor(BatchLogRecordProcessor(exporter))
 
     _logs.set_logger_provider(logger_provider)
 

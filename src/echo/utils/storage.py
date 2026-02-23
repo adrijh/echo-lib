@@ -1,4 +1,5 @@
 import os
+from typing import cast
 
 from azure.storage.blob.aio import BlobClient
 
@@ -19,7 +20,7 @@ async def get_blob_content(blob_url: str, sas: bool = False) -> bytes | None:
 
         async with client:
             stream = await client.download_blob()
-            return await stream.readall()
+            return cast(bytes | None, await stream.readall())
 
     except Exception:
         log.error(f"Could not download blob with url '{blob_url}'")
