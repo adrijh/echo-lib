@@ -86,5 +86,5 @@ class RoomsTable:
         return cast(Room | None, result.scalar_one_or_none())
 
     async def get_rooms(self) -> list[Room]:
-        result = await self.session.execute(select(Room))
+        result = await self.session.execute(select(Room).order_by(Room.start_timestamp.desc()))
         return list(result.scalars().all())
