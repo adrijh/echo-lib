@@ -1,9 +1,11 @@
-from typing import Any, Protocol
+from typing import Protocol, cast
 from uuid import UUID
 
-import duckdb
+from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from echo.store.queries import analytics as q
+from echo.db.models.insight import CallRecord
 
 
 class CallInsightProtocol(Protocol):
@@ -26,14 +28,10 @@ class CallInsightProtocol(Protocol):
 
 
 class AnalyticsTable:
-    def __init__(self, conn: duckdb.DuckDBPyConnection, is_postgres: bool) -> None:
-        self.conn = conn
-        self.table_name = "postgres.public.call_history_details" if is_postgres else "call_history_details"
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
 
-    def setup_table(self) -> None:
-        self.conn.execute(q.CREATE_ANALYTICS_TABLE_SQL.format(table_name=self.table_name))
-
-    def insert_call_metric(
+    async def insert_call_metric(
         self,
         room_id: str,
         opportunity_id: str,
@@ -42,35 +40,41 @@ class AnalyticsTable:
         user_phone: str | None,
         user_email: str | None,
         duration: int,
-        insight: Any,
+        insight: CallInsightProtocol,
         recording_url: str,
     ) -> None:
-        self.conn.execute(
-            q.INSERT_ANALYTICS_SQL.format(table_name=self.table_name),
-            [
-                room_id,
-                opportunity_id,
-                thread_id,
-                user_name,
-                user_phone,
-                user_email,
-                insight.answer,
-                insight.voicemail_answer,
-                insight.availability,
-                insight.recording_consent,
-                insight.motivation,
-                insight.work_status,
-                insight.financial_interest,
-                insight.financial_topics,
-                insight.financial_details,
-                insight.objection,
-                insight.score,
-                insight.summary,
-                insight.callback_requested,
-                insight.callback_reference_day,
-                insight.callback_day,
-                insight.callback_time,
-                duration,
-                recording_url,
-            ],
+        stmt = insert(CallRecord).values(
+            room_id=room_id,
+            opportunity_id=opportunity_id,
+            thread_id=thread_id,
+            user_name=user_name,
+            user_phone=user_phone,
+            user_email=user_email,
+            answer=insight.answer,
+            voicemail_answer=insight.voicemail_answer,
+            availability=insight.availability,
+            recording_consent=insight.recording_consent,
+            motivation=insight.motivation,
+            work_status=insight.work_status,
+            financial_interest=insight.financial_interest,
+            financial_topics=insight.financial_topics,
+            financial_details=insight.financial_details,
+            objection=insight.objection,
+            score=insight.score,
+            summary=insight.summary,
+            callback_requested=insight.callback_requested,
+            callback_reference_day=insight.callback_reference_day,
+            callback_day=insight.callback_day,
+            callback_time=insight.callback_time,
+            duration_seconds=duration,
+            recording_url=recording_url,
         )
+        await self.session.execute(stmt)
+
+    async def get_call_record(self, room_id: str) -> CallRecord | None:
+        result = await self.session.execute(select(CallRecord).where(CallRecord.room_id == room_id))
+        return cast(CallRecord | None, result.scalar_one_or_none())
+
+    async def get_call_records(self) -> list[CallRecord]:
+        result = await self.session.execute(select(CallRecord))
+        return cast(list[CallRecord], result.scalars().all())

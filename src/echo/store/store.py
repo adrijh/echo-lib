@@ -1,10 +1,12 @@
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from typing import Protocol, Self
 
-import duckdb
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from echo.db.base import get_sessionmaker
 from echo.store.analytics import AnalyticsTable
 from echo.store.context import ContextTable
-from echo.store.queries.postgres import ATTACH_POSTGRES_SQL, CREATE_POSTGRES_SECRET_SQL
 from echo.store.rooms import RoomsTable
 from echo.store.schedule_calls import ScheduleCallsTable
 from echo.store.users import UsersTable
@@ -18,46 +20,25 @@ class Store(Protocol):
     schedule_calls: ScheduleCallsTable
 
 
-class DuckDBStore:
-    def __init__(
-        self,
-        conn: duckdb.DuckDBPyConnection,
-        is_postgres: bool = True,
-        do_setup: bool = False,
-    ) -> None:
-        self.conn = conn
-        self.rooms = RoomsTable(conn, is_postgres)
-        self.users = UsersTable(conn, is_postgres)
-        self.context = ContextTable(conn, is_postgres)
-        self.analytics = AnalyticsTable(conn, is_postgres)
-        self.schedule_calls = ScheduleCallsTable(conn, is_postgres)
-
-        if do_setup:
-            self._setup_tables()
+class PostgresStore:
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+        self.rooms = RoomsTable(session)
+        self.users = UsersTable(session)
+        self.context = ContextTable(session)
+        self.analytics = AnalyticsTable(session)
+        self.schedule_calls = ScheduleCallsTable(session)
 
     @classmethod
-    def with_postgres(cls, do_setup: bool = False) -> Self:
-        conn = duckdb.connect(config={"threads": 1})
-        conn.sql(CREATE_POSTGRES_SECRET_SQL)
-        conn.sql(ATTACH_POSTGRES_SQL)
-        return cls(
-            conn=conn,
-            is_postgres=True,
-            do_setup=do_setup,
-        )
-
-    @classmethod
-    def in_memory(cls, do_setup: bool = False) -> Self:
-        conn = duckdb.connect(config={"threads": 1})
-        return cls(
-            conn=conn,
-            is_postgres=False,
-            do_setup=do_setup,
-        )
-
-    def _setup_tables(self) -> None:
-        self.rooms.setup_table()
-        self.users.setup_table()
-        self.context.setup_table()
-        self.analytics.setup_table()
-        self.schedule_calls.setup_table()
+    @asynccontextmanager
+    async def open(cls) -> AsyncGenerator[Self, None]:
+        session = get_sessionmaker()()
+        store = cls(session)
+        try:
+            yield store
+            await session.commit()
+        except:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()

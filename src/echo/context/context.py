@@ -1,99 +1,125 @@
 import json
 from datetime import timedelta
+from types import TracebackType
 from typing import Self
 from uuid import UUID, uuid4
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from echo.context.types import BlobUrl, Channel, Chat, ContextType
-from echo.store.context import ContextRow
-from echo.store.store import Store
-from echo.store.users import UserRow
+from echo.db.base import get_sessionmaker
+from echo.db.models.context import Context
+from echo.db.models.user import User
+from echo.store.store import PostgresStore
 
 
 class UserContext:
     def __init__(
         self,
-        store: Store,
-        thread_id: UUID,
-        user_data: UserRow,
-        channel: Channel,
-    ) -> None:
-        self.store = store
-        self.thread_id = thread_id
-        self.user_data = user_data
-        self.channel: Channel = channel
-
-    @classmethod
-    def from_opportunity_id(
-        cls,
-        store: Store,
         opportunity_id: str,
         channel: Channel,
         thread_id: UUID | None = None,
-    ) -> Self:
-        user_data = store.users.get_user(opportunity_id=opportunity_id)
+    ) -> None:
+        self.opportunity_id = opportunity_id
+        self.channel: Channel = channel
+        self.thread_id = thread_id or uuid4()
 
-        if not user_data:
-            raise RuntimeError(f"Could not find user with opportunity_id: {opportunity_id}")
+        self._session: AsyncSession | None = None
+        self._store: PostgresStore | None = None
+        self._user: User | None = None
 
-        if not thread_id:
-            thread_id = uuid4()
+    @property
+    def store(self) -> PostgresStore:
+        if self._store is None:
+            raise RuntimeError("UserContext is not open.")
+        return self._store
 
-        return cls(
-            store=store,
-            user_data=user_data,
-            channel=channel,
-            thread_id=thread_id,
-        )
+    @property
+    def user(self) -> User:
+        if self._user is None:
+            raise RuntimeError("UserContext is not open.")
+        return self._user
 
-    def get_context(
+    async def __aenter__(self) -> Self:
+        sessionmaker = get_sessionmaker()
+        self._session = sessionmaker()
+
+        if not self._session:
+            raise RuntimeError("Could not initiate database session")
+
+        self._store = PostgresStore(self._session)
+
+        self._user = await self._store.users.get_user(opportunity_id=self.opportunity_id)
+
+        if self._user is None:
+            raise RuntimeError("User not found")
+
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        session = self._session
+        if session is None:
+            return
+
+        try:
+            if exc_type is None:
+                await session.commit()
+            else:
+                await session.rollback()
+        finally:
+            await session.close()
+            self._session = None
+            self._store = None
+            self._user = None
+
+    async def get_context(
         self,
         *,
         max_age: timedelta = timedelta(days=30),
         types: list[ContextType] | None = None,
         channels: list[Channel] | None = None,
-    ) -> list[ContextRow]:
-        return self.store.context.get_context_history(
-            opportunity_id=self.user_data.opportunity_id,
+    ) -> list[Context]:
+        return await self.store.context.get_context_history(
+            opportunity_id=self.user.opportunity_id,
             max_age=max_age,
             types=types,
             channels=channels,
         )
 
-    def add_blob(self, blob: BlobUrl) -> None:
-        content = json.dumps(blob)
-
-        self.store.context.create_context(
+    async def add_blob(self, blob: BlobUrl) -> None:
+        await self.store.context.create_context(
             thread_id=self.thread_id,
-            opportunity_id=self.user_data.opportunity_id,
-            user_id=self.user_data.user_id,
+            opportunity_id=self.user.opportunity_id,
+            user_id=self.user.user_id,
             channel=self.channel,
             type="blob",
-            content=content,
+            content=json.dumps(blob),
         )
 
-    def add_chat(self, chat: Chat) -> None:
-        content = json.dumps(chat)
-
-        self.store.context.create_context(
+    async def add_chat(self, chat: Chat) -> None:
+        await self.store.context.create_context(
             thread_id=self.thread_id,
-            opportunity_id=self.user_data.opportunity_id,
-            user_id=self.user_data.user_id,
+            opportunity_id=self.user.opportunity_id,
+            user_id=self.user.user_id,
             channel=self.channel,
             type="chat",
-            content=content,
+            content=json.dumps(chat),
         )
 
     async def add_summary(self, summary: str) -> None:
-        summary_json = json.dumps(
-            {"summary": summary},
-            ensure_ascii=False,
-        )
-
-        self.store.context.create_context(
+        await self.store.context.create_context(
             thread_id=self.thread_id,
-            opportunity_id=self.user_data.opportunity_id,
-            user_id=self.user_data.user_id,
+            opportunity_id=self.user.opportunity_id,
+            user_id=self.user.user_id,
             channel=self.channel,
             type="summary",
-            content=summary_json,
+            content=json.dumps(
+                {"summary": summary},
+                ensure_ascii=False,
+            ),
         )
