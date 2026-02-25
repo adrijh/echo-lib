@@ -1,8 +1,8 @@
-"""add markets table
+"""add campaign tables
 
-Revision ID: ac9e4cf7ea31
+Revision ID: db998cb2c86f
 Revises: afa28e491d86
-Create Date: 2026-02-24 15:35:50.097801
+Create Date: 2026-02-25 09:54:56.507259
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'ac9e4cf7ea31'
+revision: str = 'db998cb2c86f'
 down_revision: Union[str, Sequence[str], None] = 'afa28e491d86'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None

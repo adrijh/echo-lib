@@ -3,7 +3,8 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Index, UniqueConstraint
+from sqlalchemy import DateTime, Enum, ForeignKey, Index, UniqueConstraint, func
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from echo.db.base import Base
@@ -25,7 +26,7 @@ class CampaignUserStatus(enum.Enum):
 class CampaignDetail(Base):
     __tablename__ = "campaign_details"
 
-    id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
     campaign_id: Mapped[int] = mapped_column(
         ForeignKey("campaigns.id"),
         nullable=False,
