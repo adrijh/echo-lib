@@ -16,7 +16,7 @@ from echo.db.base import Base
 class ScheduledEvent(Base):
     __tablename__ = "scheduled_events"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True)
+    id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, server_default=func.gen_random_uuid())
     scheduled_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     payload: Mapped[str | None] = mapped_column(JSON, nullable=False)
     metadata_: Mapped[str | None] = mapped_column("metadata", JSON)
