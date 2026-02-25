@@ -18,7 +18,7 @@ class CallRecord(Base):
 
     insight_id: Mapped[str] = mapped_column(UUID, primary_key=True)
     room_id: Mapped[str | None] = mapped_column(Text)
-    opportunity_id: Mapped[str | None] = mapped_column(Text)
+    opportunity_id: Mapped[str] = mapped_column(Text)
     thread_id: Mapped[uuid.UUID | None] = mapped_column(UUID)
     user_name: Mapped[str | None] = mapped_column(Text)
     user_phone: Mapped[str | None] = mapped_column(Text)

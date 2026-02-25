@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy import (
     DateTime,
     Index,
+    Text,
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column
@@ -19,9 +20,9 @@ class User(Base):
         Index("idx_users_user_id", "user_id"),
     )
 
-    user_id: Mapped[UUID] = mapped_column(primary_key=True)
+    user_id: Mapped[UUID] = mapped_column()
     contact_id: Mapped[str | None] = mapped_column()
-    opportunity_id: Mapped[str | None] = mapped_column()
+    opportunity_id: Mapped[str] = mapped_column(Text, primary_key=True)
     name: Mapped[str | None] = mapped_column()
     last_name: Mapped[str | None] = mapped_column()
     phone_number: Mapped[str | None] = mapped_column()
