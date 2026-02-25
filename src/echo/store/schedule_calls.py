@@ -31,7 +31,7 @@ class ScheduleCallsTable:
                 index_elements=["opportunity_id"],
                 set_={
                     "scheduled_at": scheduled_at,
-                    "metadata_": metadata,
+                    "metadata": metadata,
                     "status": status,
                 },
             )
