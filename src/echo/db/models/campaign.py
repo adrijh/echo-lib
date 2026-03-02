@@ -28,6 +28,11 @@ class Campaign(Base):
     name: Mapped[str] = mapped_column(String, nullable=False)
     market: Mapped[str] = mapped_column(String, nullable=False)
 
+    agent_name: Mapped[str] = mapped_column(
+        String,
+        nullable=False,
+    )
+
     status: Mapped[CampaignStatus] = mapped_column(
         Enum(CampaignStatus),
         default=CampaignStatus.DRAFT,
@@ -38,6 +43,11 @@ class Campaign(Base):
         DateTime(timezone=True),
         default=lambda: datetime.now(UTC),
         nullable=False,
+    )
+
+    scheduled_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
     )
 
     total_users: Mapped[int] = mapped_column(
