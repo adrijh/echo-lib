@@ -64,8 +64,8 @@ class WhatsappMessageReceived(SessionEvent):
     type: Literal["whatsapp_message_received"] = Field(default="whatsapp_message_received", frozen=True)
 
 
-class WhatsappSummaryScheduled(SessionEvent):
-    type: Literal["whatsapp_summary_scheduled"] = Field(default="whatsapp_summary_scheduled", frozen=True)
+class CreateWhatsappSummary(SessionEvent):
+    type: Literal["create_whatsapp_summary"] = Field(default="create_whatsapp_summary", frozen=True)
 
 
 class ScheduleCall(BaseEvent):
@@ -79,7 +79,7 @@ class ScheduleCall(BaseEvent):
 
 
 SessionEventDiscriminator = Annotated[
-    SessionStarted | SessionEnded | StartSessionRequest | SendWhatsappTemplate | WhatsappMessageReceived | WhatsappSummaryScheduled | ScheduleCall,
+    SessionStarted | SessionEnded | StartSessionRequest | SendWhatsappTemplate | WhatsappMessageReceived | CreateWhatsappSummary | ScheduleCall,
     Field(discriminator="type"),
 ]
 
