@@ -27,7 +27,8 @@ class CampaignDetail(Base):
     __tablename__ = "campaign_details"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
-    campaign_id: Mapped[int] = mapped_column(
+    campaign_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
         ForeignKey("campaigns.id"),
         nullable=False,
     )
