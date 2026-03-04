@@ -82,9 +82,22 @@ class RoomsTable:
     ) -> None:
         await self._upsert(room_id, thread_id, opportunity_id, None, None, report_url, None)
 
-    async def get_room(self, room_id: str) -> Room | None:
-        result = await self.session.execute(select(Room).where(Room.room_id == room_id))
+    async def get_room(self, room_id: str | None = None, opportunity_id: str | None = None) -> Room | None:
+        if not room_id and not opportunity_id:
+            return None
+        
+        query = select(Room)
+        if room_id:
+            query = query.where(Room.room_id == room_id)
+        if opportunity_id:
+            query = query.where(Room.opportunity_id == opportunity_id)
+        
+        result = await self.session.execute(query)
         return cast(Room | None, result.scalar_one_or_none())
+
+    async def get_rooms(self) -> list[Room]:
+        result = await self.session.execute(select(Room).order_by(Room.start_timestamp.desc()))
+        return list(result.scalars().all())
 
     async def update_metadata(self, room_id: str, new_metadata: dict[str, Any]) -> bool:
         room = await self.get_room(room_id)
@@ -94,11 +107,9 @@ class RoomsTable:
         current_metadata = dict(room.metadata_) if isinstance(room.metadata_, dict) else {}
         updated = False
         for k, v in new_metadata.items():
-            if v and v != "unknown":
-                existing_v = current_metadata.get(k)
-                if not existing_v or existing_v == "unknown":
-                    current_metadata[k] = v
-                    updated = True
+            if v:
+                current_metadata[k] = v
+                updated = True
 
         if updated:
             room.metadata_ = current_metadata
@@ -106,16 +117,3 @@ class RoomsTable:
             await self.session.commit()
             return True
         return False
-
-    async def resolve_room_and_opportunity(
-        self, room_id: str, current_opportunity_id: str | None
-    ) -> tuple[Room | None, str | None]:
-        room = await self.get_room(room_id)
-        if room and (not current_opportunity_id or current_opportunity_id == "unknown"):
-            if room.opportunity_id and room.opportunity_id != "unknown":
-                return room, room.opportunity_id
-        return room, current_opportunity_id
-
-    async def get_rooms(self) -> list[Room]:
-        result = await self.session.execute(select(Room).order_by(Room.start_timestamp.desc()))
-        return list(result.scalars().all())
