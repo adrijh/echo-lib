@@ -5,6 +5,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm.attributes import flag_modified
 
 from echo.db.models.room import Room
 
@@ -84,6 +85,36 @@ class RoomsTable:
     async def get_room(self, room_id: str) -> Room | None:
         result = await self.session.execute(select(Room).where(Room.room_id == room_id))
         return cast(Room | None, result.scalar_one_or_none())
+
+    async def update_metadata(self, room_id: str, new_metadata: dict[str, Any]) -> bool:
+        room = await self.get_room(room_id)
+        if not room:
+            return False
+
+        current_metadata = dict(room.metadata_) if isinstance(room.metadata_, dict) else {}
+        updated = False
+        for k, v in new_metadata.items():
+            if v and v != "unknown":
+                existing_v = current_metadata.get(k)
+                if not existing_v or existing_v == "unknown":
+                    current_metadata[k] = v
+                    updated = True
+
+        if updated:
+            room.metadata_ = current_metadata
+            flag_modified(room, "metadata_")
+            await self.session.commit()
+            return True
+        return False
+
+    async def resolve_room_and_opportunity(
+        self, room_id: str, current_opportunity_id: str | None
+    ) -> tuple[Room | None, str | None]:
+        room = await self.get_room(room_id)
+        if room and (not current_opportunity_id or current_opportunity_id == "unknown"):
+            if room.opportunity_id and room.opportunity_id != "unknown":
+                return room, room.opportunity_id
+        return room, current_opportunity_id
 
     async def get_rooms(self) -> list[Room]:
         result = await self.session.execute(select(Room).order_by(Room.start_timestamp.desc()))
