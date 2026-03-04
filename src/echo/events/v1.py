@@ -79,7 +79,13 @@ class ScheduleCall(BaseEvent):
 
 
 SessionEventDiscriminator = Annotated[
-    SessionStarted | SessionEnded | StartSessionRequest | SendWhatsappTemplate | WhatsappMessageReceived | CreateWhatsappSummary | ScheduleCall,
+    SessionStarted
+    | SessionEnded
+    | StartSessionRequest
+    | SendWhatsappTemplate
+    | WhatsappMessageReceived
+    | CreateWhatsappSummary
+    | ScheduleCall,
     Field(discriminator="type"),
 ]
 

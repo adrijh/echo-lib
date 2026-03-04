@@ -85,13 +85,13 @@ class RoomsTable:
     async def get_room(self, room_id: str | None = None, opportunity_id: str | None = None) -> Room | None:
         if not room_id and not opportunity_id:
             return None
-        
+
         query = select(Room)
         if room_id:
             query = query.where(Room.room_id == room_id)
         if opportunity_id:
             query = query.where(Room.opportunity_id == opportunity_id)
-        
+
         result = await self.session.execute(query)
         return cast(Room | None, result.scalar_one_or_none())
 
