@@ -1,6 +1,7 @@
 from echo.db.models.campaign import Campaign
 from echo.db.models.campaign_detail import CampaignDetail
 from echo.db.models.context import Context
+from echo.db.models.evaluator import Evaluator
 from echo.db.models.insight import CallRecord
 from echo.db.models.room import Room
 from echo.db.models.scheduled_call import ScheduledCall
@@ -12,6 +13,7 @@ __all__ = [
     "Campaign",
     "CampaignDetail",
     "Context",
+    "Evaluator",
     "Room",
     "ScheduledCall",
     "ScheduledEvent",
