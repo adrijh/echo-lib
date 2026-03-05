@@ -34,6 +34,7 @@ class AnalyticsTable:
 
     async def insert_call_metric(
         self,
+        campaign_id: str,
         room_id: str,
         opportunity_id: str,
         thread_id: UUID | None,
@@ -45,6 +46,7 @@ class AnalyticsTable:
         recording_url: str,
     ) -> None:
         stmt = insert(CallRecord).values(
+            campaign_id=campaign_id,
             room_id=room_id,
             opportunity_id=opportunity_id,
             thread_id=thread_id,
