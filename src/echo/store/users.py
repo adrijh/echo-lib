@@ -42,7 +42,7 @@ class UsersTable:
                 track=track,
             )
             .on_conflict_do_update(
-                index_elements=["user_id"],
+                index_elements=["opportunity_id"],
                 set_={
                     "contact_id": contact_id,
                     "opportunity_id": opportunity_id,
