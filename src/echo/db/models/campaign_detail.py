@@ -1,10 +1,10 @@
 import enum
 import uuid
-from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Index, UniqueConstraint, func
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Enum, ForeignKey, Index, UniqueConstraint, func
+from sqlalchemy.dialects.postgresql import JSON, UUID
+from sqlalchemy.ext.mutable import MutableList
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from echo.db.base import Base
@@ -20,7 +20,11 @@ class CampaignUserStatus(enum.Enum):
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
     FAILED = "failed"
-    DO_NOT_CALL = "do_not_call"
+
+
+class AttemptData(TypedDict):
+    called_at: str | None
+    next_call_after: str | None
 
 
 class CampaignDetail(Base):
@@ -44,10 +48,11 @@ class CampaignDetail(Base):
         nullable=False,
     )
 
-    attempt_count: Mapped[int] = mapped_column(default=0, nullable=False)
-
-    last_called_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    next_call_after: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    attempts: Mapped[list[AttemptData]] = mapped_column(
+        MutableList.as_mutable(JSON),
+        default=list,
+        nullable=False,
+    )
 
     campaign: Mapped["Campaign"] = relationship(back_populates="users")
 
@@ -60,5 +65,4 @@ class CampaignDetail(Base):
             name="uq_campaign_opportunity",
         ),
         Index("ix_campaign_status", "campaign_id", "status"),
-        Index("ix_next_call_after", "next_call_after"),
     )
