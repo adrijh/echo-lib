@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Protocol, cast
 from uuid import UUID
 
@@ -13,6 +14,7 @@ class CallInsightProtocol(Protocol):
     voicemail_answer: bool
     availability: str | None
     recording_consent: bool | None
+    program: str | None
     motivation: str | None
     work_status: str
     financial_interest: bool
@@ -23,8 +25,7 @@ class CallInsightProtocol(Protocol):
     summary: str
     callback_requested: bool
     callback_reference_day: str | None
-    callback_day: str | None
-    callback_time: str | None
+    callback_at: datetime | None
 
 
 class AnalyticsTable:
@@ -64,8 +65,7 @@ class AnalyticsTable:
             summary=insight.summary,
             callback_requested=insight.callback_requested,
             callback_reference_day=insight.callback_reference_day,
-            callback_day=insight.callback_day,
-            callback_time=insight.callback_time,
+            callback_at=insight.callback_at,
             duration_seconds=duration,
             recording_url=recording_url,
         )
