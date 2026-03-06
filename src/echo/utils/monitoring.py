@@ -75,3 +75,13 @@ def setup_logging(
     _logs.set_logger_provider(logger_provider)
 
     return logger_provider
+
+
+def get_trace_id() -> str | None:
+    span = trace.get_current_span()
+    ctx = span.get_span_context()
+
+    if not ctx.is_valid:
+        return None
+
+    return format(ctx.trace_id, "032x")
