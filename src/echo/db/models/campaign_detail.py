@@ -48,6 +48,10 @@ class CampaignDetail(Base):
         nullable=False,
     )
 
+    market: Mapped[str] = mapped_column(nullable=False)
+
+    plancode: Mapped[str] = mapped_column(nullable=False)
+
     attempts: Mapped[list[AttemptData]] = mapped_column(
         MutableList.as_mutable(JSON),
         default=list,
