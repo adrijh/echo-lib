@@ -27,6 +27,9 @@ class CallRecord(Base):
     user_phone: Mapped[str | None] = mapped_column(Text)
     user_email: Mapped[str | None] = mapped_column(Text)
 
+    plancode: Mapped[str | None] = mapped_column(Text)
+    market: Mapped[str | None] = mapped_column(Text)
+
     answer: Mapped[bool | None] = mapped_column()
     voicemail_answer: Mapped[bool | None] = mapped_column()
 
