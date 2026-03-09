@@ -138,10 +138,10 @@ async def upload_report_to_blob_storage(
         return f"file://{os.path.abspath(local_path)}"
 
     if storage_backend == "azure":
-        await upload_report_to_azure_blob_storage(report, room_sid)
+        return await upload_report_to_azure_blob_storage(report, room_sid)
 
     if storage_backend == "minio":
-        upload_report_to_minio_blob_storage(report, room_sid)
+        return upload_report_to_minio_blob_storage(report, room_sid)
 
     return None
 
