@@ -1,6 +1,6 @@
 [project]
 name = "echo"
-version = "0.1.54"
+version = "0.1.55"
 description = "Add your description here"
 readme = "README.md"
 authors = [
@@ -13,6 +13,7 @@ dependencies = [
     "alembic>=1.18.4",
     "asyncpg>=0.31.0",
     "azure-storage-blob>=12.28.0",
+    "boto3>=1.42.63",
     "duckdb>=1.4.4",
     "langchain>=1.2.9",
     "langchain-openai>=1.1.7",
