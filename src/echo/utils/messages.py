@@ -1,8 +1,12 @@
+from collections.abc import Iterable
 from typing import Any, cast
 
 from langchain_core.messages import (
     AIMessage,
+    BaseMessage,
     HumanMessage,
+    MessageLikeRepresentation,
+    convert_to_messages,
     convert_to_openai_messages as langchain_messages_to_chat,
 )
 
@@ -32,6 +36,11 @@ def livekit_report_to_chat(report: dict[str, Any]) -> Chat:
                     messages.append(AIMessage(text))
 
     return cast(Chat, langchain_messages_to_chat(messages))
+
+
+def livekit_report_to_messages(report: dict[str, Any]) -> Iterable[BaseMessage]:
+    chat = cast(Iterable[MessageLikeRepresentation], livekit_report_to_chat(report))
+    return cast(Iterable[BaseMessage], convert_to_messages(chat))
 
 
 def build_summary(chat: Chat) -> str:
