@@ -88,7 +88,7 @@ async def upload_report_with_retry(
 ) -> str | None:
     for attempt in range(1, max_attempts + 1):
         try:
-            file_url = upload_report_to_blob_storage(
+            file_url = await upload_report_to_blob_storage(
                 report=report,
                 room_sid=room_sid,
             )
@@ -117,7 +117,7 @@ async def upload_report_with_retry(
     return None
 
 
-def upload_report_to_blob_storage(
+async def upload_report_to_blob_storage(
     report: dict[str, Any],
     room_sid: str,
 ) -> str | None:
@@ -138,7 +138,7 @@ def upload_report_to_blob_storage(
         return f"file://{os.path.abspath(local_path)}"
 
     if storage_backend == "azure":
-        upload_report_to_azure_blob_storage(report, room_sid)
+        await upload_report_to_azure_blob_storage(report, room_sid)
 
     if storage_backend == "minio":
         upload_report_to_minio_blob_storage(report, room_sid)
@@ -146,7 +146,7 @@ def upload_report_to_blob_storage(
     return None
 
 
-def upload_report_to_azure_blob_storage(
+async def upload_report_to_azure_blob_storage(
     report: dict[str, Any],
     room_sid: str,
 ) -> str | None:
@@ -161,7 +161,7 @@ def upload_report_to_azure_blob_storage(
 
         container_client = blob_service_client.get_container_client(os.environ["AZURE_STORAGE_CONTAINER_SESSIONS_NAME"])
 
-        container_client.upload_blob(blob_name, json_data, overwrite=True)
+        await container_client.upload_blob(blob_name, json_data, overwrite=True)
 
         account_name = blob_service_client.account_name
         sas_token = generate_blob_sas(
