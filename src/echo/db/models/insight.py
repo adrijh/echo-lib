@@ -50,6 +50,11 @@ class CallRecord(Base):
     callback_requested: Mapped[bool | None] = mapped_column()
     callback_reference_day: Mapped[str | None] = mapped_column(Text)
     callback_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    quality_notes: Mapped[str | None] = mapped_column(Text)
+    user_satisfaction: Mapped[str | None] = mapped_column(Text)
+    frustration: Mapped[bool | None] = mapped_column()
+    hallucination_detected: Mapped[bool | None] = mapped_column()
+    compliance_risk_detected: Mapped[bool | None] = mapped_column()
 
     duration_seconds: Mapped[int | None] = mapped_column()
     recording_url: Mapped[str | None] = mapped_column(Text)
