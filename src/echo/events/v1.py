@@ -78,6 +78,12 @@ class ScheduleCall(BaseEvent):
     phone_number: str
 
 
+class UpdateRoomStatus(BaseEvent):
+    type: Literal["update_room_status"] = Field(default="update_room_status", frozen=True)
+    room_id: str
+    event: dict[str, Any]
+
+
 SessionEventDiscriminator = Annotated[
     SessionStarted
     | SessionEnded
@@ -85,7 +91,8 @@ SessionEventDiscriminator = Annotated[
     | SendWhatsappTemplate
     | WhatsappMessageReceived
     | CreateWhatsappSummary
-    | ScheduleCall,
+    | ScheduleCall
+    | UpdateRoomStatus,
     Field(discriminator="type"),
 ]
 
