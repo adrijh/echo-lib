@@ -1,11 +1,14 @@
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import (
     JSON,
     DateTime,
     String,
+    text,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from echo.db.base import Base
@@ -20,4 +23,10 @@ class Room(Base):
     start_timestamp: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     end_timestamp: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     report_url: Mapped[str | None] = mapped_column()
-    metadata_: Mapped[str | None] = mapped_column("metadata", JSON)
+    metadata_: Mapped[dict[str, Any] | None] = mapped_column("metadata", JSON)
+    timeline: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSONB,
+        default=list,
+        server_default=text("'[]'::jsonb"),
+        nullable=False,
+    )
