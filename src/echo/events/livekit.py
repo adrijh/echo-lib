@@ -1,21 +1,25 @@
 from abc import abstractmethod
 from typing import Annotated, Any, Literal, cast
 
-from pydantic import BaseModel, Field, TypeAdapter, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError
 
 
-class Codec(BaseModel):
+class BaseConfig(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+
+class Codec(BaseConfig):
     mime: str | None = None
     mime_type: str | None = Field(alias="mimeType", default=None)
     mid: str | None = None
     cid: str | None = None
 
 
-class Version(BaseModel):
+class Version(BaseConfig):
     unix_micro: str = Field(alias="unixMicro")
 
 
-class Permission(BaseModel):
+class Permission(BaseConfig):
     can_subscribe: bool | None = Field(default=None, alias="canSubscribe")
     can_publish: bool | None = Field(default=None, alias="canPublish")
     can_publish_data: bool | None = Field(default=None, alias="canPublishData")
@@ -25,7 +29,7 @@ class Permission(BaseModel):
     agent: bool | None = None
 
 
-class Room(BaseModel):
+class Room(BaseConfig):
     sid: str
     name: str
     empty_timeout: int | None = Field(default=None, alias="emptyTimeout")
@@ -39,7 +43,7 @@ class Room(BaseModel):
     active_recording: bool | None = Field(default=None, alias="activeRecording")
 
 
-class Participant(BaseModel):
+class Participant(BaseConfig):
     sid: str | None = None
     identity: str | None = None
     state: str | None = None
@@ -54,7 +58,7 @@ class Participant(BaseModel):
     disconnect_reason: str | None = Field(default=None, alias="disconnectReason")
 
 
-class Track(BaseModel):
+class Track(BaseConfig):
     sid: str | None = None
     name: str | None = None
     source: str | None = None
@@ -66,7 +70,7 @@ class Track(BaseModel):
     backup_codec_policy: str | None = Field(default=None, alias="backupCodecPolicy")
 
 
-class S3Config(BaseModel):
+class S3Config(BaseConfig):
     access_key: str = Field(alias="accessKey")
     secret: str
     region: str
@@ -75,18 +79,18 @@ class S3Config(BaseModel):
     force_path_style: bool = Field(alias="forcePathStyle")
 
 
-class FileOutput(BaseModel):
+class FileOutput(BaseConfig):
     filepath: str
     s3: S3Config | None = None
 
 
-class RoomComposite(BaseModel):
+class RoomComposite(BaseConfig):
     room_name: str = Field(alias="roomName")
     audio_only: bool = Field(alias="audioOnly")
     file_outputs: list[FileOutput] = Field(alias="fileOutputs")
 
 
-class FileInfo(BaseModel):
+class FileInfo(BaseConfig):
     filename: str | None = None
     started_at: str | None = Field(default=None, alias="startedAt")
     ended_at: str | None = Field(default=None, alias="endedAt")
@@ -95,7 +99,7 @@ class FileInfo(BaseModel):
     location: str | None = None
 
 
-class EgressInfo(BaseModel):
+class EgressInfo(BaseConfig):
     egress_id: str = Field(alias="egressId")
     room_id: str = Field(alias="roomId")
     room_name: str | None = Field(default=None, alias="roomName")
@@ -108,7 +112,7 @@ class EgressInfo(BaseModel):
     file_results: list[FileInfo] | None = Field(default=None, alias="fileResults")
 
 
-class BaseEvent(BaseModel):
+class BaseEvent(BaseConfig):
     id: str
     created_at: str = Field(alias="createdAt")
 
