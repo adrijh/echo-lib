@@ -26,6 +26,11 @@ class CallInsightProtocol(Protocol):
     callback_requested: bool
     callback_reference_day: str | None
     callback_at: datetime | None
+    quality_notes: str | None
+    user_satisfaction: str | None
+    frustration: bool
+    hallucination_detected: bool
+    compliance_risk_detected: bool
 
 
 class AnalyticsTable:
@@ -72,6 +77,11 @@ class AnalyticsTable:
             callback_requested=insight.callback_requested,
             callback_reference_day=insight.callback_reference_day,
             callback_at=insight.callback_at,
+            quality_notes=insight.quality_notes,
+            user_satisfaction=insight.user_satisfaction,
+            frustration=insight.frustration,
+            hallucination_detected=insight.hallucination_detected,
+            compliance_risk_detected=insight.compliance_risk_detected,
             duration_seconds=duration,
             recording_url=recording_url,
         )
