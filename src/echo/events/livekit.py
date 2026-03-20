@@ -41,6 +41,7 @@ class Room(BaseConfig):
     num_participants: int | None = Field(default=None, alias="numParticipants")
     num_publishers: int | None = Field(default=None, alias="numPublishers")
     active_recording: bool | None = Field(default=None, alias="activeRecording")
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class Participant(BaseConfig):
@@ -56,6 +57,7 @@ class Participant(BaseConfig):
     attributes: dict[str, str] | None = None
     is_publisher: bool | None = Field(default=None, alias="isPublisher")
     disconnect_reason: str | None = Field(default=None, alias="disconnectReason")
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class Track(BaseConfig):
