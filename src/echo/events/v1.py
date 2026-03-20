@@ -80,7 +80,6 @@ class ScheduleCall(BaseEvent):
 
 class UpdateRoomStatus(BaseEvent):
     type: Literal["update_room_status"] = Field(default="update_room_status", frozen=True)
-    room_id: str
     event: dict[str, Any]
 
 
