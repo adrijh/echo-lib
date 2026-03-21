@@ -27,6 +27,8 @@ class RoomsTable:
         update_values = {
             k: v
             for k, v in {
+                "thread_id": thread_id,
+                "opportunity_id": opportunity_id,
                 "start_timestamp": start_timestamp,
                 "end_timestamp": end_timestamp,
                 "report_url": report_url,
