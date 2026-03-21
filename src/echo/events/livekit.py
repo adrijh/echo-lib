@@ -1,7 +1,8 @@
+import json
 from abc import abstractmethod
 from typing import Annotated, Any, Literal, cast
 
-from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError, field_validator
 
 
 class BaseConfig(BaseModel):
@@ -43,6 +44,14 @@ class Room(BaseConfig):
     active_recording: bool | None = Field(default=None, alias="activeRecording")
     metadata: dict[str, Any] = Field(default_factory=dict)
 
+    @field_validator("metadata", mode="before")
+    @classmethod
+    def parse_metadata(cls, v: Any) -> dict[str, Any]:
+        if isinstance(v, str):
+            return json.loads(v) if v else {}
+
+        return cast(dict[str, Any], v)
+
 
 class Participant(BaseConfig):
     sid: str | None = None
@@ -58,6 +67,14 @@ class Participant(BaseConfig):
     is_publisher: bool | None = Field(default=None, alias="isPublisher")
     disconnect_reason: str | None = Field(default=None, alias="disconnectReason")
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator("metadata", mode="before")
+    @classmethod
+    def parse_metadata(cls, v: Any) -> dict[str, Any]:
+        if isinstance(v, str):
+            return json.loads(v) if v else {}
+
+        return cast(dict[str, Any], v)
 
 
 class Track(BaseConfig):
