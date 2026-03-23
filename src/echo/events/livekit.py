@@ -188,6 +188,7 @@ class ParticipantJoinedEvent(BaseEvent):
             "timestamp": self.participant.joined_at,
         }
 
+
 class ParticipantLeftEvent(BaseEvent):
     event: Literal["participant_left"]
     room: Room
@@ -203,8 +204,9 @@ class ParticipantLeftEvent(BaseEvent):
             "id": self.id,
             "kind": self.participant.kind,
             "timestamp": self.created_at,
-            "disconnect_reason": self.participant.disconnect_reason
+            "disconnect_reason": self.participant.disconnect_reason,
         }
+
 
 class TrackPublishedEvent(BaseEvent):
     event: Literal["track_published"]
@@ -240,6 +242,7 @@ class TrackUnpublishedEvent(BaseEvent):
             "id": self.id,
             "timestamp": self.created_at,
         }
+
 
 class EgressStartedEvent(BaseEvent):
     event: Literal["egress_started"]

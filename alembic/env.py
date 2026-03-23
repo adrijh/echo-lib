@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
 from echo.db.base import Base, build_connection_string
+from echo.db.models.adversary import Adversary  # noqa: F401
 
 ENV_FILE = Path(__file__).parent / ".." / ".env"
 load_dotenv(ENV_FILE)
