@@ -5,6 +5,7 @@ from typing import Protocol, Self
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from echo.db.base import get_sessionmaker
+from echo.store.adversary import AdversaryTable
 from echo.store.analytics import AnalyticsTable
 from echo.store.context import ContextTable
 from echo.store.rooms import RoomsTable
@@ -18,6 +19,7 @@ class Store(Protocol):
     context: ContextTable
     analytics: AnalyticsTable
     schedule_calls: ScheduleCallsTable
+    adversary: AdversaryTable
 
 
 class PostgresStore:
@@ -28,6 +30,7 @@ class PostgresStore:
         self.context = ContextTable(session)
         self.analytics = AnalyticsTable(session)
         self.schedule_calls = ScheduleCallsTable(session)
+        self.adversary = AdversaryTable(session)
 
     @classmethod
     @asynccontextmanager
