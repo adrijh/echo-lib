@@ -2,7 +2,7 @@ import enum
 import uuid
 from typing import TYPE_CHECKING, TypedDict
 
-from sqlalchemy import Enum, ForeignKey, Index, UniqueConstraint, func
+from sqlalchemy import Enum, ForeignKey, Index, String, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import JSON, UUID
 from sqlalchemy.ext.mutable import MutableList
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -61,6 +61,9 @@ class CampaignDetail(Base):
     campaign: Mapped["Campaign"] = relationship(back_populates="users")
 
     user: Mapped["User"] = relationship()
+
+    substage: Mapped[str] = mapped_column(String, nullable=True)
+    rating: Mapped[str] = mapped_column(String, nullable=True)
 
     __table_args__ = (
         UniqueConstraint(
