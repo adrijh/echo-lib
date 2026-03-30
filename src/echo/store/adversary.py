@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+import builtins
 from datetime import UTC, datetime
 from typing import Any, cast
 from uuid import UUID
@@ -6,7 +9,12 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.attributes import flag_modified
 
-from echo.db.models.adversary import Adversary, AdversaryMode, AdversaryStatus
+from echo.db.models.adversary import (
+    Adversary,
+    AdversaryDetail,
+    AdversaryMode,
+    AdversaryStatus,
+)
 
 
 class AdversaryTable:
@@ -44,7 +52,7 @@ class AdversaryTable:
         status: AdversaryStatus | None = None,
         limit: int = 50,
         offset: int = 0,
-    ) -> tuple[list[Adversary], int]:
+    ) -> tuple[builtins.list[Adversary], int]:
         query = select(Adversary)
         count_query = select(func.count()).select_from(Adversary)
 
@@ -109,3 +117,49 @@ class AdversaryTable:
         await self.session.flush()
         await self.session.refresh(adversary)
         return adversary
+
+    # ── AdversaryDetail CRUD ──────────────────────────────────
+
+    async def create_detail(
+        self,
+        adversary_id: UUID,
+        room_name: str,
+    ) -> AdversaryDetail:
+        detail = AdversaryDetail(
+            adversary_id=adversary_id,
+            room_name=room_name,
+        )
+        self.session.add(detail)
+        await self.session.flush()
+        await self.session.refresh(detail)
+        return detail
+
+    async def get_detail(self, detail_id: UUID) -> AdversaryDetail | None:
+        result = await self.session.execute(select(AdversaryDetail).where(AdversaryDetail.id == detail_id))
+        return cast(AdversaryDetail | None, result.scalar_one_or_none())
+
+    async def list_details(
+        self,
+        adversary_id: UUID,
+    ) -> builtins.list[AdversaryDetail]:
+        result = await self.session.execute(
+            select(AdversaryDetail)
+            .where(AdversaryDetail.adversary_id == adversary_id)
+            .order_by(AdversaryDetail.created_at)
+        )
+        return list(result.scalars().all())
+
+    async def update_detail(
+        self,
+        detail_id: UUID,
+        **fields: Any,
+    ) -> AdversaryDetail | None:
+        detail = await self.get_detail(detail_id)
+        if not detail:
+            return None
+        for key, value in fields.items():
+            if hasattr(detail, key):
+                setattr(detail, key, value)
+        await self.session.flush()
+        await self.session.refresh(detail)
+        return detail
