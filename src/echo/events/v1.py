@@ -51,6 +51,7 @@ class StartSessionRequest(SessionEvent):
     type: Literal["start_session_request"] = Field(default="start_session_request", frozen=True)
     room_id: str
     phone_number: str
+    market: str
     first_name: str
     last_name: str
 
