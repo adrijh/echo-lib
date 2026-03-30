@@ -118,8 +118,6 @@ class AdversaryTable:
         await self.session.refresh(adversary)
         return adversary
 
-    # ── AdversaryDetail CRUD ──────────────────────────────────
-
     async def create_detail(
         self,
         adversary_id: UUID,
