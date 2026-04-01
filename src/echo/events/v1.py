@@ -84,6 +84,12 @@ class UpdateRoomStatus(BaseEvent):
     event: dict[str, Any]
 
 
+class FailedSessionRequest(SessionEvent):
+    type: Literal["failed_session_request"] = "failed_session_request"
+    phone_number: str
+    reason: str
+
+
 SessionEventDiscriminator = Annotated[
     SessionStarted
     | SessionEnded
@@ -92,10 +98,10 @@ SessionEventDiscriminator = Annotated[
     | WhatsappMessageReceived
     | CreateWhatsappSummary
     | ScheduleCall
-    | UpdateRoomStatus,
+    | UpdateRoomStatus
+    | FailedSessionRequest,
     Field(discriminator="type"),
 ]
-
 
 SessionEventAdapter = TypeAdapter[SessionEvent](SessionEventDiscriminator)
 
