@@ -1,6 +1,6 @@
 import enum
 import uuid
-from typing import TYPE_CHECKING, TypedDict
+from typing import TYPE_CHECKING, NotRequired, TypedDict
 
 from sqlalchemy import Enum, ForeignKey, Index, String, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import JSON, UUID
@@ -25,6 +25,7 @@ class CampaignUserStatus(enum.Enum):
 class AttemptData(TypedDict):
     called_at: str | None
     next_call_after: str | None
+    failure_reason: NotRequired[str]
 
 
 class CampaignDetail(Base):
