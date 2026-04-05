@@ -79,9 +79,9 @@ class ScheduleCall(BaseEvent):
     phone_number: str
 
 
-class UpdateRoomStatus(BaseEvent):
-    type: Literal["update_room_status"] = Field(default="update_room_status", frozen=True)
-    event: dict[str, Any]
+class ProcessLivekitEvent(BaseEvent):
+    type: Literal["process_livekit_event"] = Field(default="process_livekit_event", frozen=True)
+    body: str
 
 
 class UpdateCampaignStatus(SessionEvent):
@@ -99,7 +99,7 @@ SessionEventDiscriminator = Annotated[
     | WhatsappMessageReceived
     | CreateWhatsappSummary
     | ScheduleCall
-    | UpdateRoomStatus
+    | ProcessLivekitEvent
     | UpdateCampaignStatus,
     Field(discriminator="type"),
 ]
