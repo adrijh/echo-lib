@@ -54,6 +54,7 @@ class StartSessionRequest(SessionEvent):
     market: str
     first_name: str
     last_name: str
+    agent_name: str | None = None
 
 
 class SendWhatsappTemplate(SessionEvent):
