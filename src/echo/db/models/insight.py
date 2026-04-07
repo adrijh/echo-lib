@@ -5,6 +5,7 @@ from sqlalchemy import (
     ARRAY,
     UUID,
     DateTime,
+    Index,
     Text,
     func,
 )
@@ -60,3 +61,5 @@ class CallRecord(Base):
     recording_url: Mapped[str | None] = mapped_column(Text)
 
     processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (Index("ix_call_history_campaign_id", "campaign_id"),)

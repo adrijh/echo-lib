@@ -91,6 +91,9 @@ class AnalyticsTable:
         result = await self.session.execute(select(CallRecord).where(CallRecord.room_id == room_id))
         return cast(CallRecord | None, result.scalar_one_or_none())
 
-    async def get_call_records(self) -> list[CallRecord]:
-        result = await self.session.execute(select(CallRecord))
+    async def get_call_records(self, campaign_id: str | None = None) -> list[CallRecord]:
+        stmt = select(CallRecord)
+        if campaign_id is not None:
+            stmt = stmt.where(CallRecord.campaign_id == campaign_id)
+        result = await self.session.execute(stmt)
         return cast(list[CallRecord], result.scalars().all())
