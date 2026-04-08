@@ -46,6 +46,15 @@ class SessionEnded(SessionEvent):
     room_id: str
     report_url: str
 
+class SessionStartedHotfix(SessionEvent):
+    type: Literal["session_started_hx"] = Field(default="session_started_hx", frozen=True)
+    room_id: str
+
+class SessionEndedHotfix(SessionEvent):
+    type: Literal["session_ended_hx"] = Field(default="session_ended_hx", frozen=True)
+    room_id: str
+    report_url: str
+
 
 class StartSessionRequest(SessionEvent):
     type: Literal["start_session_request"] = Field(default="start_session_request", frozen=True)
@@ -95,6 +104,8 @@ class UpdateCampaignStatus(SessionEvent):
 SessionEventDiscriminator = Annotated[
     SessionStarted
     | SessionEnded
+    | SessionStartedHotfix
+    | SessionEndedHotfix
     | StartSessionRequest
     | SendWhatsappTemplate
     | WhatsappMessageReceived
