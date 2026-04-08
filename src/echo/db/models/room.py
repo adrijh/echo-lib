@@ -19,7 +19,7 @@ class Room(Base):
 
     room_id: Mapped[str] = mapped_column(String, primary_key=True)
     thread_id: Mapped[UUID | None] = mapped_column()
-    opportunity_id: Mapped[str | None] = mapped_column()
+    opportunity_id: Mapped[str | None] = mapped_column(index=True)
     start_timestamp: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     end_timestamp: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     report_url: Mapped[str | None] = mapped_column()
