@@ -68,7 +68,7 @@ def _configure_root_logging(
 
     level = _resolve_log_level(log_level, ignore_env_vars)
     root = logging.getLogger()
-    root.setLevel(level)
+    root.setLevel(logging.WARNING)
 
     if enable_stdout and not _has_stream_handler(root):
         stream_handler = logging.StreamHandler(sys.stdout)
