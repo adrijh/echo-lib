@@ -5,6 +5,7 @@ from sqlalchemy import (
     JSON,
     UUID,
     DateTime,
+    Index,
     Text,
     func,
 )
@@ -24,4 +25,12 @@ class ScheduledEvent(Base):
     added_timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_timestamp: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    __table_args__ = (
+        Index(
+            "ix_scheduled_events_dispatch",
+            "scheduled_at",
+            postgresql_where=(status.in_(["pending", "dispatching"])),
+        ),
     )
