@@ -5,8 +5,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import select
 from dotenv import load_dotenv
+from sqlalchemy import select
 
 load_dotenv()
 
@@ -23,16 +23,12 @@ BLOB_BASE_URL = f"https://{STORAGE_ACCOUNT_NAME}.blob.core.windows.net/{CONTAINE
 
 
 async def get_opportunity_ids(store: PostgresStore, campaign_id: str) -> list[str]:
-    stmt = select(CampaignDetail.opportunity_id).where(
-        CampaignDetail.campaign_id == campaign_id
-    )
+    stmt = select(CampaignDetail.opportunity_id).where(CampaignDetail.campaign_id == campaign_id)
     result = await store.session.execute(stmt)
     return [row[0] for row in result.all()]
 
 
-async def get_all_call_details(
-    store: PostgresStore, campaign_id: str
-) -> dict[str, list[dict[str, Any]]]:
+async def get_all_call_details(store: PostgresStore, campaign_id: str) -> dict[str, list[dict[str, Any]]]:
     """Fetch all call details for a campaign, grouped by opportunity_id."""
     stmt = select(
         CallRecord.opportunity_id,
@@ -46,9 +42,7 @@ async def get_all_call_details(
 
     grouped: dict[str, list[dict[str, Any]]] = {}
     for row in result.all():
-        grouped.setdefault(row[0], []).append(
-            {"room_id": row[1], "score": row[2], "processed_at": row[3]}
-        )
+        grouped.setdefault(row[0], []).append({"room_id": row[1], "score": row[2], "processed_at": row[3]})
     return grouped
 
 
@@ -151,7 +145,10 @@ async def run(campaign_id: str, output_dir: Path, *, force: bool = False) -> Non
 
         logger.info(
             "Done. downloaded=%d cached=%d skipped=%d total=%d",
-            downloaded, cached, skipped, len(opportunity_ids),
+            downloaded,
+            cached,
+            skipped,
+            len(opportunity_ids),
         )
 
 
