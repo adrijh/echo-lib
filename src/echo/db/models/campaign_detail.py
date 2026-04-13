@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 class CampaignUserStatus(enum.Enum):
     PENDING = "pending"
     RETRY = "retry"
+    QUEUED = "queued"
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
     FAILED = "failed"

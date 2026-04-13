@@ -66,3 +66,9 @@ class Campaign(Base):
         back_populates="campaign",
         cascade="all, delete-orphan",
     )
+
+    cancelled_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        default=None,
+    )
