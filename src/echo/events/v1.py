@@ -54,13 +54,20 @@ class RunContext(SessionEvent):
 
 
 class StartSessionRequest(SessionEvent):
-    type: Literal["start_session_request"] = Field(default="start_session_request", frozen=True)
+    type: Literal["start_session_request", "campaign_start_session_request"] = Field(
+        default="start_session_request", frozen=True
+    )
     room_id: str
     phone_number: str
     market: str
     first_name: str
     last_name: str
     agent_name: str | None = None
+
+
+class CampaignStartSessionRequest(StartSessionRequest):
+    type: Literal["campaign_start_session_request"] = Field(default="campaign_start_session_request", frozen=True)
+    campaign_id: str
 
 
 class SendWhatsappTemplate(SessionEvent):
@@ -103,6 +110,7 @@ SessionEventDiscriminator = Annotated[
     | SessionEnded
     | RunContext
     | StartSessionRequest
+    | CampaignStartSessionRequest
     | SendWhatsappTemplate
     | WhatsappMessageReceived
     | CreateWhatsappSummary
