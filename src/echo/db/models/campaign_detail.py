@@ -2,15 +2,7 @@ import enum
 import uuid
 from typing import TYPE_CHECKING, NotRequired, TypedDict
 
-from sqlalchemy import (
-    Enum,
-    Enum as SAEnum,
-    ForeignKey,
-    Index,
-    String,
-    UniqueConstraint,
-    func,
-)
+from sqlalchemy import Enum, ForeignKey, Index, String, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import JSON, UUID
 from sqlalchemy.ext.mutable import MutableList
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -53,10 +45,7 @@ class CampaignDetail(Base):
     )
 
     status: Mapped[CampaignUserStatus] = mapped_column(
-        SAEnum(
-            CampaignUserStatus,
-            values_callable=lambda e: [member.value for member in e],
-        ),
+        Enum(CampaignUserStatus),
         default=CampaignUserStatus.PENDING,
         nullable=False,
     )
