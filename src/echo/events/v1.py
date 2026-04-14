@@ -61,6 +61,7 @@ class StartSessionRequest(SessionEvent):
     first_name: str
     last_name: str
     agent_name: str | None = None
+    ignore_cooldown: bool = False
 
 
 class CampaignStartSessionRequest(SessionEvent):
