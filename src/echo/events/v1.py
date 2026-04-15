@@ -126,7 +126,8 @@ SessionEventDiscriminator = Annotated[
     | CreateWhatsappSummary
     | ScheduleCall
     | ProcessLivekitEvent
-    | UpdateCampaignStatus,
+    | UpdateCampaignStatus
+    | FetchTranscriptions,
     Field(discriminator="type"),
 ]
 
