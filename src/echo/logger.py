@@ -3,7 +3,6 @@ import os
 import sys
 
 from opentelemetry.sdk._logs import LoggingHandler
-from typing_extensions import deprecated
 
 LOG_LEVELS_MAPPING = {
     "CRITICAL": logging.CRITICAL,
@@ -18,21 +17,6 @@ _DEFAULT_FORMAT = "%(asctime)s [%(levelname)s] %(name)s - %(message)s"
 _DEFAULT_DATEFMT = "%Y-%m-%d %H:%M:%S"
 
 _logging_configured = False
-
-
-@deprecated("Use get_logger instead.")
-def configure_logger(
-    name: str,
-    log_level: str = "INFO",
-    ignore_env_vars: bool = False,
-    enable_stdout: bool = True,
-) -> logging.Logger:
-    return get_logger(
-        name=name,
-        log_level=log_level,
-        ignore_env_vars=ignore_env_vars,
-        enable_stdout=enable_stdout,
-    )
 
 
 def get_logger(

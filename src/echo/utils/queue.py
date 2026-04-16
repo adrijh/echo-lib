@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import os
 from collections.abc import Awaitable, Callable
 from typing import Any, Protocol
@@ -13,9 +14,9 @@ from aio_pika.abc import (
 from pamqp.commands import Queue as PamQueue
 
 import echo.events.v1 as events
-from echo.logger import configure_logger
+from echo.logger import get_logger
 
-log = configure_logger(__name__)
+log = get_logger(__name__)
 
 
 class Queue(Protocol):
@@ -123,3 +124,46 @@ class RabbitQueue:
             message,
             routing_key=self.queue.name,
         )
+
+
+_connection: RabbitConnection | None = None
+_queues: dict[str, RabbitQueue] = {}
+
+_connection_lock = asyncio.Lock()
+_queues_lock = asyncio.Lock()
+
+
+async def get_queue_connection() -> RabbitConnection:
+    global _connection
+
+    if _connection is None:
+        async with _connection_lock:
+            if _connection is None:
+                _connection = await RabbitConnection.connect()
+
+    return _connection
+
+
+async def get_queue(
+    name: str,
+    *,
+    prefetch: int = 1,
+    bootstrap: bool = False,
+) -> RabbitQueue:
+    if name not in _queues:
+        async with _queues_lock:
+            if name not in _queues:
+                conn = await get_queue_connection()
+
+                if bootstrap:
+                    _queues[name] = await conn.create_queue(
+                        name,
+                        prefetch=prefetch,
+                    )
+                else:
+                    _queues[name] = await conn.get_queue(
+                        name,
+                        prefetch=prefetch,
+                    )
+
+    return _queues[name]

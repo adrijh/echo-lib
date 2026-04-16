@@ -2,9 +2,9 @@ import inspect
 import os
 
 import echo.config as cfg
-from echo.logger import configure_logger
+from echo.logger import get_logger
 
-log = configure_logger(__name__)
+log = get_logger(__name__)
 
 
 def load_langfuse_prompt(prompt_name: str) -> str:

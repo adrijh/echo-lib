@@ -7,9 +7,9 @@ from langchain_openai import (
 from pydantic import SecretStr
 
 from echo import config as cfg
-from echo.logger import configure_logger
+from echo.logger import get_logger
 
-logger = configure_logger(__name__)
+logger = get_logger(__name__)
 
 type ChatModel = ChatOpenAI | AzureChatOpenAI
 
