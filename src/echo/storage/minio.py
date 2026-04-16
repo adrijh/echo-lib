@@ -1,7 +1,9 @@
 import asyncio
 import json
 import os
-from typing import Any, cast
+from collections.abc import Sequence
+from pathlib import Path
+from typing import Any, BinaryIO, cast
 from urllib.parse import urlparse
 
 from echo.logger import get_logger
@@ -13,18 +15,18 @@ class MinioStorage(Storage):
     def __init__(self) -> None:
         import boto3
 
+        self.endpoint = os.environ["MINIO_ENDPOINT"].rstrip("/")
+        self.sessions_bucket = os.environ["MINIO_BUCKET_SESSIONS"]
         self.client = boto3.client(
             "s3",
-            endpoint_url=os.environ["MINIO_ENDPOINT"],
+            endpoint_url=self.endpoint,
             aws_access_key_id=os.environ["MINIO_ACCESS_KEY"],
             aws_secret_access_key=os.environ["MINIO_SECRET_KEY"],
             region_name=os.environ["MINIO_REGION"],
         )
 
     async def fetch_report(self, room_id: str) -> dict[str, Any]:
-        endpoint = os.environ["MINIO_ENDPOINT"].rstrip("/")
-        bucket = os.environ["MINIO_BUCKET_SESSIONS"]
-        blob_url = f"{endpoint}/{bucket}/recordings/{room_id}/session-report.json"
+        blob_url = f"{self.endpoint}/{self.sessions_bucket}/recordings/{room_id}/session-report.json"
 
         log.info("Fetching report from URL: %s", blob_url)
         raw_bytes = await self.get_blob_content(blob_url)
@@ -34,9 +36,7 @@ class MinioStorage(Storage):
         return cast(dict[str, Any], json.loads(raw_bytes.decode("utf-8")))
 
     async def fetch_recording(self, room_id: str) -> bytes | None:
-        endpoint = os.environ["MINIO_ENDPOINT"].rstrip("/")
-        bucket = os.environ["MINIO_BUCKET_SESSIONS"]
-        blob_url = f"{endpoint}/{bucket}/recordings/{room_id}/recording.ogg"
+        blob_url = f"{self.endpoint}/{self.sessions_bucket}/recordings/{room_id}/recording.ogg"
         return await self.get_blob_content(blob_url)
 
     async def get_blob_content(self, blob_url: str, sas: bool = False) -> bytes | None:
@@ -104,7 +104,7 @@ class MinioStorage(Storage):
         try:
 
             self.client.put_object(
-                Bucket=os.environ["MINIO_BUCKET_SESSIONS"],
+                Bucket=self.sessions_bucket,
                 Key=blob_name,
                 Body=json_data,
                 ContentType="application/json",
@@ -113,16 +113,68 @@ class MinioStorage(Storage):
             presigned_url = self.client.generate_presigned_url(
                 "get_object",
                 Params={
-                    "Bucket": os.environ["MINIO_BUCKET_SESSIONS"],
+                    "Bucket": self.sessions_bucket,
                     "Key": blob_name,
                 },
                 ExpiresIn=86400,
             )
 
-            log.debug(f"Session report uploaded to MinIO: {os.environ['MINIO_BUCKET_SESSIONS']}/{blob_name}")
+            log.debug(f"Session report uploaded to MinIO: {self.sessions_bucket}/{blob_name}")
 
             return cast(str | None, presigned_url)
 
         except Exception as e:
             log.error(f"Failed to upload session report to MinIO: {e}")
             return None
+
+    async def download_blobs_batch(
+        self,
+        blob_names: Sequence[str],
+        dest_dir: Path,
+        *,
+        concurrency: int = 16,
+    ) -> dict[str, Path]:
+        dest_dir.mkdir(parents=True, exist_ok=True)
+        sem = asyncio.Semaphore(concurrency)
+        results: dict[str, Path] = {}
+        results_lock = asyncio.Lock()
+
+        async def _download_one(key: str) -> None:
+            async with sem:
+                try:
+                    local_path = dest_dir / key.replace("/", "_")
+
+                    def _fetch() -> bytes:
+                        response = self.client.get_object(Bucket=self.sessions_bucket, Key=key)
+                        return cast(bytes, response["Body"].read())
+
+                    data = await asyncio.to_thread(_fetch)
+                    local_path.write_bytes(data)
+                    async with results_lock:
+                        results[key] = local_path
+                except Exception:
+                    log.warning(f"Failed to download object: {key}", exc_info=True)
+
+        await asyncio.gather(*(_download_one(name) for name in blob_names))
+        log.info(f"Downloaded {len(results)}/{len(blob_names)} objects to {dest_dir}")
+        return results
+
+    async def upload_blob(
+        self,
+        blob_name: str,
+        data: bytes | BinaryIO,
+    ) -> str:
+        try:
+            def _upload() -> None:
+                self.client.put_object(
+                    Bucket=self.sessions_bucket,
+                    Key=blob_name,
+                    Body=data,
+                )
+
+            await asyncio.to_thread(_upload)
+            log.debug(f"Uploaded object: {self.sessions_bucket}/{blob_name}")
+            return blob_name
+        except Exception:
+            log.exception(f"Failed to upload object: {blob_name}")
+            raise
