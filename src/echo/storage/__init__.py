@@ -19,7 +19,7 @@ async def get_storage() -> Storage:
     if _storage is None:
         async with _storage_lock:
             if _storage is None:
-                provider = os.getenv("STORAGE_PROVIDER", "azure").lower()
+                provider = os.getenv("STORAGE_BACKEND", "azure").lower()
                 log.debug(f"loading storage for provider: {provider}...")
 
                 if provider == "azure":

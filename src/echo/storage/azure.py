@@ -1,8 +1,10 @@
 import asyncio
 import json
 import os
+from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
-from typing import Any, cast
+from pathlib import Path
+from typing import Any, BinaryIO, cast
 
 from azure.storage.blob.aio import BlobClient, BlobServiceClient
 
@@ -22,11 +24,11 @@ class AzureStorage(Storage):
             self.sessions_container_name
         )
 
-    async def fetch_report(self, room_id: str) -> dict[str, Any]:
+    async def fetch_report(self, room_id: str, sas: bool = False) -> dict[str, Any]:
         blob_url = f"https://{self.account_name}.blob.core.windows.net/{self.sessions_container_name}/recordings/{room_id}/session-report.json"
 
         log.info("Fetching report from URL: %s", blob_url)
-        raw_bytes = await self.get_blob_content(blob_url, True)
+        raw_bytes = await self.get_blob_content(blob_url, sas)
         if raw_bytes is None:
             raise RuntimeError("Blob content could not be loaded")
 
@@ -126,3 +128,47 @@ class AzureStorage(Storage):
         except Exception as e:
             log.error(f"Failed to upload session report to Azure: {e}")
             return None
+
+    async def download_blobs_batch(
+        self,
+        blob_names: Sequence[str],
+        dest_dir: Path,
+        *,
+        concurrency: int = 16,
+    ) -> dict[str, Path]:
+        dest_dir.mkdir(parents=True, exist_ok=True)
+        sem = asyncio.Semaphore(concurrency)
+        results: dict[str, Path] = {}
+
+        async def _download_one(blob_name: str) -> None:
+            async with sem:
+                try:
+                    local_path = dest_dir / blob_name.replace("/", "_")
+                    blob_client = self.sessions_client.get_blob_client(blob_name)
+                    async with blob_client:
+                        stream = await blob_client.download_blob()
+                        data = await stream.readall()
+                    local_path.write_bytes(data)
+                    results[blob_name] = local_path
+                except Exception:
+                    log.warning(f"Failed to download blob: {blob_name}", exc_info=True)
+
+        await asyncio.gather(*(_download_one(name) for name in blob_names))
+        log.info(f"Downloaded {len(results)}/{len(blob_names)} blobs to {dest_dir}")
+        return results
+
+    async def upload_blob(
+        self,
+        blob_name: str,
+        data: bytes | BinaryIO,
+    ) -> str:
+        try:
+            await self.sessions_client.upload_blob(blob_name, data, overwrite=True)
+            log.debug(f"Uploaded blob: {self.sessions_container_name}/{blob_name}")
+            return (
+                f"https://{self.account_name}.blob.core.windows.net"
+                f"/{self.sessions_container_name}/{blob_name}"
+            )
+        except Exception:
+            log.exception(f"Failed to upload blob: {blob_name}")
+            raise
