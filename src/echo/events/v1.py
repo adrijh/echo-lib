@@ -110,6 +110,11 @@ class UpdateCampaignStatus(SessionEvent):
     reason: str | None = None
 
 
+class FetchTranscriptions(BaseEvent):
+    type: Literal["fetch_transcriptions"] = "fetch_transcriptions"
+    payload: dict[str, Any] = Field(default_factory=dict)
+
+
 SessionEventDiscriminator = Annotated[
     SessionStarted
     | SessionEnded
@@ -121,7 +126,8 @@ SessionEventDiscriminator = Annotated[
     | CreateWhatsappSummary
     | ScheduleCall
     | ProcessLivekitEvent
-    | UpdateCampaignStatus,
+    | UpdateCampaignStatus
+    | FetchTranscriptions,
     Field(discriminator="type"),
 ]
 
