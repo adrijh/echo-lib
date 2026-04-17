@@ -165,8 +165,10 @@ class AzureStorage(Storage):
         try:
             await self.sessions_client.upload_blob(blob_name, data, overwrite=True)
             log.debug(f"Uploaded blob: {self.sessions_container_name}/{blob_name}")
-            return blob_name
+            return (
+                f"https://{self.account_name}.blob.core.windows.net"
+                f"/{self.sessions_container_name}/{blob_name}"
+            )
         except Exception:
             log.exception(f"Failed to upload blob: {blob_name}")
             raise
-

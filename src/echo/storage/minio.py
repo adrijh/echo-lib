@@ -174,7 +174,7 @@ class MinioStorage(Storage):
 
             await asyncio.to_thread(_upload)
             log.debug(f"Uploaded object: {self.sessions_bucket}/{blob_name}")
-            return blob_name
+            return f"{self.endpoint}/{self.sessions_bucket}/{blob_name}"
         except Exception:
             log.exception(f"Failed to upload object: {blob_name}")
             raise
