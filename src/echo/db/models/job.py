@@ -21,4 +21,4 @@ class Job(Base):
     start_timestamp: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     end_timestamp: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     payload: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB, nullable=True)
-    file: Mapped[str] = mapped_column(String, nullable=False)
+    file: Mapped[str | None] = mapped_column(String, nullable=True)
