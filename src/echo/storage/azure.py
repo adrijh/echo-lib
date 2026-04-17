@@ -24,11 +24,11 @@ class AzureStorage(Storage):
             self.sessions_container_name
         )
 
-    async def fetch_report(self, room_id: str) -> dict[str, Any]:
+    async def fetch_report(self, room_id: str, sas: bool = False) -> dict[str, Any]:
         blob_url = f"https://{self.account_name}.blob.core.windows.net/{self.sessions_container_name}/recordings/{room_id}/session-report.json"
 
         log.info("Fetching report from URL: %s", blob_url)
-        raw_bytes = await self.get_blob_content(blob_url, True)
+        raw_bytes = await self.get_blob_content(blob_url, sas)
         if raw_bytes is None:
             raise RuntimeError("Blob content could not be loaded")
 
