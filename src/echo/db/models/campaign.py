@@ -8,6 +8,7 @@ from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from echo.db.base import Base
+from echo.utils.capabilities import Capabilities
 
 if TYPE_CHECKING:
     from echo.db.models.campaign_detail import CampaignDetail
@@ -73,7 +74,7 @@ class Campaign(Base):
         default=None,
     )
 
-    capabilities: Mapped[list[dict[str, Any]] | None] = mapped_column(
+    capabilities: Mapped[Capabilities] = mapped_column(
         JSONB,
         default=dict,
         server_default=text("'{}'::jsonb"),
