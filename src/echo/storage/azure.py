@@ -1,7 +1,7 @@
 import asyncio
 import json
 import os
-from collections.abc import Sequence
+from collections.abc import AsyncIterator, Sequence
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, BinaryIO, cast
@@ -172,3 +172,18 @@ class AzureStorage(Storage):
         except Exception:
             log.exception(f"Failed to upload blob: {blob_name}")
             raise
+
+    async def stream_blob(self, url: str) -> AsyncIterator[bytes] | None:
+        try:
+            blob_client = BlobClient.from_blob_url(
+                url,
+                credential=os.environ["AZURE_ACCOUNT_KEY"],
+            )
+            async with blob_client:
+                stream = await blob_client.download_blob()
+                async for chunk in stream.chunks():
+                    yield chunk
+
+        except Exception:
+            log.error(f"Could not stream blob with url '{url}'")
+            return
