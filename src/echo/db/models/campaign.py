@@ -1,10 +1,10 @@
 import enum
 import uuid
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import DateTime, Enum, Integer, String, func
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import DateTime, Enum, Integer, String, func, text
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from echo.db.base import Base
@@ -71,4 +71,11 @@ class Campaign(Base):
         DateTime(timezone=True),
         nullable=True,
         default=None,
+    )
+
+    capabilities: Mapped[list[dict[str, Any]] | None] = mapped_column(
+        JSONB,
+        default=dict,
+        server_default=text("'{}'::jsonb"),
+        nullable=False,
     )
