@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import AsyncIterator, Sequence
 from pathlib import Path
 from typing import Any, BinaryIO, Protocol
 
@@ -38,3 +38,5 @@ class Storage(Protocol):
         blob_name: str,
         data: bytes | BinaryIO,
     ) -> str: ...
+
+    async def stream_blob(self, url: str) -> AsyncIterator[bytes] | None: ...
