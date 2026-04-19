@@ -2,7 +2,7 @@ from typing import TypedDict
 
 
 class SalesforceCouponPayload(TypedDict):
-    interacion_campaign_id: str
+    interaction_campaign_id: str
 
 class IgnoreCooldownPayload(TypedDict):
     ignore_cooldown: bool
