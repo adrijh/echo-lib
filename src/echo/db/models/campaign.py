@@ -1,7 +1,7 @@
 import enum
 import uuid
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, Enum, Integer, String, func, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
