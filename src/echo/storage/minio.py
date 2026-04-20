@@ -179,26 +179,21 @@ class MinioStorage(Storage):
             log.exception(f"Failed to upload object: {blob_name}")
             raise
 
-    async def stream_blob(self, url: str) -> AsyncIterator[bytes] | None:
+    async def stream_blob(self, url: str) -> AsyncIterator[bytes]:
+        parsed = urlparse(url)
+        bucket = parsed.path.split("/")[1]
+        key = "/".join(parsed.path.split("/")[2:])
+
+        response = await asyncio.to_thread(
+            self.client.get_object, Bucket=bucket, Key=key
+        )
+        body = response["Body"]
+
         try:
-            parsed = urlparse(url)
-            bucket = parsed.path.split("/")[1]
-            key = "/".join(parsed.path.split("/")[2:])
-
-            response = await asyncio.to_thread(
-                self.client.get_object, Bucket=bucket, Key=key
-            )
-            body = response["Body"]
-
-            try:
-                while True:
-                    chunk = await asyncio.to_thread(body.read, 8192)
-                    if not chunk:
-                        break
-                    yield chunk
-            finally:
-                body.close()
-
-        except Exception:
-            log.error(f"Could not stream object with url '{url}'")
-            return
+            while True:
+                chunk = await asyncio.to_thread(body.read, 8192)
+                if not chunk:
+                    break
+                yield chunk
+        finally:
+            body.close()
