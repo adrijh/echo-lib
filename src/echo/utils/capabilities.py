@@ -10,3 +10,4 @@ class Capabilities(BaseModel):
     ignore_cooldown: bool = False
 
     model_config = ConfigDict(extra="forbid")
+

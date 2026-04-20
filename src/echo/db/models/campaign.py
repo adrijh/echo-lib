@@ -1,9 +1,9 @@
 import enum
 import uuid
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import DateTime, Enum, Integer, String, func, text
+from sqlalchemy import DateTime, Enum, Integer, String, TypeDecorator, func, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -20,6 +20,17 @@ class CampaignStatus(enum.Enum):
     COMPLETED = "completed"
     PAUSED = "paused"
     CANCELLED = "cancelled"
+
+
+class CapabilitiesType(TypeDecorator[Any]):
+    impl = JSONB
+    cache_ok = True
+
+    def process_bind_param(self, value: Any, dialect: Any) -> dict[str, Any]:
+        return value.model_dump() if isinstance(value, Capabilities) else value
+
+    def process_result_value(self, value: Any, dialect: Any) -> Capabilities:
+        return Capabilities.model_validate(value) if value is not None else Capabilities()
 
 
 class Campaign(Base):
@@ -75,7 +86,7 @@ class Campaign(Base):
     )
 
     capabilities: Mapped[Capabilities] = mapped_column(
-        JSONB,
+        CapabilitiesType,
         default=dict,
         server_default=text("'{}'::jsonb"),
         nullable=False,
