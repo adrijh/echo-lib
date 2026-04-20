@@ -10,6 +10,8 @@ class Storage(Protocol):
 
     async def get_blob_content(self, blob_url: str, sas: bool = False) -> bytes | None: ...
 
+    async def get_blob_size(self, url: str) -> int | None: ...
+
     async def upload_report_with_retry(
         self,
         *,

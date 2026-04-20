@@ -182,3 +182,14 @@ class AzureStorage(Storage):
             stream = await blob_client.download_blob()
             async for chunk in stream.chunks():
                 yield chunk
+
+    async def get_blob_size(self, url: str) -> int | None:
+        try:
+            blob_client = BlobClient.from_blob_url(
+                url, credential=os.environ["AZURE_ACCOUNT_KEY"],
+            )
+            async with blob_client:
+                props = await blob_client.get_blob_properties()
+                return props.size
+        except Exception:
+            return None

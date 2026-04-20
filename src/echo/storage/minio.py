@@ -197,3 +197,18 @@ class MinioStorage(Storage):
                 yield chunk
         finally:
             body.close()
+
+    async def get_blob_size(self, url: str) -> int | None:
+        try:
+            parsed = urlparse(url)
+            bucket = parsed.path.split("/")[1]
+            key = "/".join(parsed.path.split("/")[2:])
+
+            def _head() -> int:
+                response = self.client.head_object(Bucket=bucket, Key=key)
+                return cast(int, response["ContentLength"])
+
+            return await asyncio.to_thread(_head)
+        except Exception:
+            log.error(f"Could not get size for object with url '{url}'")
+            return None
