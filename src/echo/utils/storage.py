@@ -6,12 +6,14 @@ from typing import Any, cast
 from urllib.parse import urlparse
 
 from azure.storage.blob.aio import BlobClient, BlobServiceClient
+from typing_extensions import deprecated
 
 from echo.logger import get_logger
 
 log = get_logger(__name__)
 
 
+@deprecated("Use storage class")
 async def fetch_report(url: str) -> dict[str, Any]:
     log.info("Fetching report from URL: %s", url)
     raw_bytes = await get_blob_content(url, True)
@@ -21,6 +23,7 @@ async def fetch_report(url: str) -> dict[str, Any]:
     return cast(dict[str, Any], json.loads(raw_bytes.decode("utf-8")))
 
 
+@deprecated("Use storage class")
 async def get_blob_content(blob_url: str, sas: bool = False) -> bytes | None:
     storage_backend = os.getenv("STORAGE_BACKEND", "azure")
 
@@ -33,6 +36,7 @@ async def get_blob_content(blob_url: str, sas: bool = False) -> bytes | None:
     return None
 
 
+@deprecated("Use storage class")
 async def get_azure_blob_content(blob_url: str, sas: bool = False) -> bytes | None:
     try:
         if sas:
@@ -52,6 +56,7 @@ async def get_azure_blob_content(blob_url: str, sas: bool = False) -> bytes | No
         return None
 
 
+@deprecated("Use storage class")
 async def get_minio_blob_content(blob_url: str) -> bytes | None:
     import boto3
 
@@ -79,6 +84,7 @@ async def get_minio_blob_content(blob_url: str) -> bytes | None:
         return None
 
 
+@deprecated("Use storage class")
 async def upload_report_with_retry(
     *,
     report: dict[str, Any],
@@ -117,6 +123,7 @@ async def upload_report_with_retry(
     return None
 
 
+@deprecated("Use storage class")
 async def upload_report_to_blob_storage(
     report: dict[str, Any],
     room_sid: str,
@@ -146,6 +153,7 @@ async def upload_report_to_blob_storage(
     return None
 
 
+@deprecated("Use storage class")
 async def upload_report_to_azure_blob_storage(
     report: dict[str, Any],
     room_sid: str,
@@ -182,6 +190,7 @@ async def upload_report_to_azure_blob_storage(
         return None
 
 
+@deprecated("Use storage class")
 def upload_report_to_minio_blob_storage(
     report: dict[str, Any],
     room_sid: str,

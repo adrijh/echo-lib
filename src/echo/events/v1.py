@@ -4,6 +4,8 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field, TypeAdapter, ValidationError, field_serializer, field_validator
 
+from echo.utils.capabilities import Capabilities
+
 
 class BaseEvent(BaseModel):
     version: Literal["v1"] = Field(default="v1", frozen=True)
@@ -34,6 +36,7 @@ class BaseEvent(BaseModel):
 class SessionEvent(BaseEvent):
     thread_id: UUID = Field(default_factory=uuid4)
     opportunity_id: str
+    capabilities: Capabilities = Field(default_factory=Capabilities)
 
 
 class SessionStarted(SessionEvent):
@@ -55,18 +58,6 @@ class RunContext(SessionEvent):
 
 class StartSessionRequest(SessionEvent):
     type: Literal["start_session_request"] = Field(default="start_session_request", frozen=True)
-    room_id: str
-    phone_number: str
-    market: str
-    first_name: str
-    last_name: str
-    agent_name: str | None = None
-    ignore_cooldown: bool = False
-
-
-class CampaignStartSessionRequest(SessionEvent):
-    type: Literal["campaign_start_session_request"] = Field(default="campaign_start_session_request", frozen=True)
-    campaign_id: str
     room_id: str
     phone_number: str
     market: str
@@ -120,7 +111,6 @@ SessionEventDiscriminator = Annotated[
     | SessionEnded
     | RunContext
     | StartSessionRequest
-    | CampaignStartSessionRequest
     | SendWhatsappTemplate
     | WhatsappMessageReceived
     | CreateWhatsappSummary
