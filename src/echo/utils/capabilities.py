@@ -18,4 +18,4 @@ class Capabilities(BaseModel):
     send_salesforce_coupon: SalesforceCouponPayload | None = None
     cooldown: CallCooldown | None = None
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
