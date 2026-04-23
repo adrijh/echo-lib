@@ -1,6 +1,7 @@
 import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import Any
 
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
@@ -16,10 +17,10 @@ class Base(DeclarativeBase):
 
 
 _engine: AsyncEngine | None = None
-_sessionmaker: async_sessionmaker | None = None
+_sessionmaker: async_sessionmaker[Any] | None = None
 
 
-def get_sessionmaker() -> async_sessionmaker:
+def get_sessionmaker() -> async_sessionmaker[Any]:
     global _engine, _sessionmaker
 
     if _sessionmaker is None:
@@ -53,6 +54,23 @@ def build_connection_string(
     database = database or os.environ["POSTGRES_DB"]
 
     return f"postgresql+asyncpg://{user}:{password}@{host}:{port}/{database}"
+
+
+def build_dsn(
+    *,
+    user: str | None = None,
+    password: str | None = None,
+    host: str | None = None,
+    port: str | None = None,
+    database: str | None = None,
+) -> str:
+    user = user or os.environ["POSTGRES_USER"]
+    password = password or os.environ["POSTGRES_PASSWORD"]
+    host = host or os.environ["POSTGRES_HOST"]
+    port = port or os.environ["POSTGRES_PORT"]
+    database = database or os.environ["POSTGRES_DB"]
+
+    return f"postgresql://{user}:{password}@{host}:{port}/{database}"
 
 
 def create_engine(connection_string: str | None = None) -> AsyncEngine:

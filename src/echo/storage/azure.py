@@ -173,17 +173,23 @@ class AzureStorage(Storage):
             log.exception(f"Failed to upload blob: {blob_name}")
             raise
 
-    async def stream_blob(self, url: str) -> AsyncIterator[bytes] | None:
+    async def stream_blob(self, url: str) -> AsyncIterator[bytes]:
+        blob_client = BlobClient.from_blob_url(
+            url,
+            credential=os.environ["AZURE_ACCOUNT_KEY"],
+        )
+        async with blob_client:
+            stream = await blob_client.download_blob()
+            async for chunk in stream.chunks():
+                yield chunk
+
+    async def get_blob_size(self, url: str) -> int | None:
         try:
             blob_client = BlobClient.from_blob_url(
-                url,
-                credential=os.environ["AZURE_ACCOUNT_KEY"],
+                url, credential=os.environ["AZURE_ACCOUNT_KEY"],
             )
             async with blob_client:
-                stream = await blob_client.download_blob()
-                async for chunk in stream.chunks():
-                    yield chunk
-
+                props = await blob_client.get_blob_properties()
+                return props.size
         except Exception:
-            log.error(f"Could not stream blob with url '{url}'")
-            return
+            return None

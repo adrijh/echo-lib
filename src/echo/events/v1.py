@@ -106,6 +106,12 @@ class FetchTranscriptions(BaseEvent):
     payload: dict[str, Any] = Field(default_factory=dict)
 
 
+class SendSalesforceCoupon(BaseEvent):
+    type: Literal["send_salesforce_coupon"] = "send_salesforce_coupon"
+    data: dict[str, Any] = Field(default_factory=dict)
+    opportunity_id: str
+
+
 SessionEventDiscriminator = Annotated[
     SessionStarted
     | SessionEnded
@@ -117,7 +123,8 @@ SessionEventDiscriminator = Annotated[
     | ScheduleCall
     | ProcessLivekitEvent
     | UpdateCampaignStatus
-    | FetchTranscriptions,
+    | FetchTranscriptions
+    | SendSalesforceCoupon,
     Field(discriminator="type"),
 ]
 
