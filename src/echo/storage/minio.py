@@ -52,7 +52,7 @@ class MinioStorage(Storage):
             return await asyncio.to_thread(_download)
 
         except Exception:
-            log.error(f"Could not download object with url '{blob_url}'")
+            log.warning(f"Could not download object with url '{blob_url}'")
             return None
 
     async def upload_report_with_retry(

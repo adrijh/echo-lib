@@ -56,7 +56,7 @@ class AzureStorage(Storage):
                 return cast(bytes | None, await stream.readall())
 
         except Exception:
-            log.error(f"Could not download blob with url '{blob_url}'")
+            log.warning(f"Could not download blob with url '{blob_url}'")
             return None
 
     async def upload_report_with_retry(
