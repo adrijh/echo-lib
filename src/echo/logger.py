@@ -2,8 +2,6 @@ import logging
 import os
 import sys
 
-from opentelemetry.sdk._logs import LoggingHandler
-
 LOG_LEVELS_MAPPING = {
     "CRITICAL": logging.CRITICAL,
     "ERROR": logging.ERROR,
@@ -66,9 +64,14 @@ def _configure_root_logging(
         root.addHandler(stream_handler)
 
     enable_otel = os.getenv("ENABLE_OTEL_LOGGING", "true").lower() == "true"
-    if enable_otel and not _has_otel_handler(root):
-        otel_handler = LoggingHandler(level=level)
-        root.addHandler(otel_handler)
+    if enable_otel:
+        try:
+            from opentelemetry.sdk._logs import LoggingHandler
+        except ImportError:
+            pass
+        else:
+            if not _has_otel_handler(root, LoggingHandler):
+                root.addHandler(LoggingHandler(level=level))
 
     _logging_configured = True
 
@@ -87,5 +90,5 @@ def _has_stream_handler(logger: logging.Logger) -> bool:
     return any(isinstance(h, logging.StreamHandler) for h in logger.handlers)
 
 
-def _has_otel_handler(logger: logging.Logger) -> bool:
-    return any(isinstance(h, LoggingHandler) for h in logger.handlers)
+def _has_otel_handler(logger: logging.Logger, handler_cls: type) -> bool:
+    return any(isinstance(h, handler_cls) for h in logger.handlers)
