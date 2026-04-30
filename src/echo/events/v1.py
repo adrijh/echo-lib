@@ -55,6 +55,11 @@ class RunContext(SessionEvent):
     room_id: str
     report_url: str
 
+class RunEvaluations(SessionEvent):
+    type: Literal["run_evaluations"] = Field(default="run_evaluations", frozen=True)
+    room_id: str
+    report_url: str
+
 
 class StartSessionRequest(SessionEvent):
     type: Literal["start_session_request"] = Field(default="start_session_request", frozen=True)
@@ -116,6 +121,7 @@ SessionEventDiscriminator = Annotated[
     SessionStarted
     | SessionEnded
     | RunContext
+    | RunEvaluations
     | StartSessionRequest
     | SendWhatsappTemplate
     | WhatsappMessageReceived
