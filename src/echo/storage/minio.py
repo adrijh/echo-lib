@@ -7,7 +7,7 @@ from typing import Any, BinaryIO, cast
 from urllib.parse import urlparse
 
 from echo.logger import get_logger
-from echo.storage.base import Storage
+from echo.storage.base import Storage, TrackInfo, build_track_info
 
 log = get_logger(__name__)
 
@@ -38,6 +38,58 @@ class MinioStorage(Storage):
     async def fetch_recording(self, room_id: str) -> bytes | None:
         blob_url = f"{self.endpoint}/{self.sessions_bucket}/recordings/{room_id}/recording.ogg"
         return await self.get_blob_content(blob_url)
+
+    async def fetch_recording_tracks(self, room_id: str) -> list[TrackInfo]:
+        prefix = f"recordings/{room_id}/tracks/"
+
+        def _list_keys() -> tuple[list[str], set[str]]:
+            ogg_keys: list[str] = []
+            sidecar_keys: set[str] = set()
+            paginator = self.client.get_paginator("list_objects_v2")
+            for page in paginator.paginate(Bucket=self.sessions_bucket, Prefix=prefix):
+                for obj in page.get("Contents", []):
+                    key = obj["Key"]
+                    if key.endswith(".ogg.json"):
+                        sidecar_keys.add(key)
+                    elif key.endswith(".ogg"):
+                        ogg_keys.append(key)
+            return ogg_keys, sidecar_keys
+
+        ogg_keys, sidecar_keys = await asyncio.to_thread(_list_keys)
+        pairs = [(ogg, f"{ogg}.json") for ogg in ogg_keys if f"{ogg}.json" in sidecar_keys]
+
+        sidecars = await asyncio.gather(
+            *(self._download_sidecar(name) for _, name in pairs)
+        )
+
+        tracks: list[TrackInfo] = []
+        for (ogg_key, _), meta in zip(pairs, sidecars, strict=True):
+            if meta is None:
+                continue
+            try:
+                url = self.client.generate_presigned_url(
+                    "get_object",
+                    Params={"Bucket": self.sessions_bucket, "Key": ogg_key},
+                    ExpiresIn=86400,
+                )
+                tracks.append(build_track_info(meta, url))
+            except (KeyError, TypeError) as exc:
+                log.warning(f"Skipping track {ogg_key}: {exc}")
+
+        tracks.sort(key=lambda t: t["started_at"])
+        return tracks
+
+    async def _download_sidecar(self, key: str) -> dict[str, Any] | None:
+        try:
+            def _get() -> bytes:
+                response = self.client.get_object(Bucket=self.sessions_bucket, Key=key)
+                return cast(bytes, response["Body"].read())
+
+            data = await asyncio.to_thread(_get)
+            return cast(dict[str, Any], json.loads(data.decode("utf-8")))
+        except Exception:
+            log.warning(f"Failed to load sidecar: {key}", exc_info=True)
+            return None
 
     async def get_blob_content(self, blob_url: str, sas: bool = False) -> bytes | None:
         try:

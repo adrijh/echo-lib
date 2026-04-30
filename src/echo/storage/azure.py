@@ -9,7 +9,7 @@ from typing import Any, BinaryIO, cast
 from azure.storage.blob.aio import BlobClient, BlobServiceClient
 
 from echo.logger import get_logger
-from echo.storage.base import Storage
+from echo.storage.base import Storage, TrackInfo, build_track_info
 
 log = get_logger(__name__)
 
@@ -39,6 +39,63 @@ class AzureStorage(Storage):
         blob_url = f"https://{self.account_name}.blob.core.windows.net/{self.sessions_container_name}/recordings/{room_id}/recording.ogg"
         content = await self.get_blob_content(blob_url)
         return content
+
+    async def fetch_recording_tracks(self, room_id: str) -> list[TrackInfo]:
+        from azure.storage.blob import BlobSasPermissions, generate_blob_sas
+
+        prefix = f"recordings/{room_id}/tracks/"
+        ogg_names: list[str] = []
+        sidecar_names: set[str] = set()
+
+        async for blob in self.sessions_client.list_blobs(name_starts_with=prefix):
+            name = blob.name
+            if name.endswith(".ogg.json"):
+                sidecar_names.add(name)
+            elif name.endswith(".ogg"):
+                ogg_names.append(name)
+
+        pairs = [(ogg, f"{ogg}.json") for ogg in ogg_names if f"{ogg}.json" in sidecar_names]
+        sidecars = await asyncio.gather(
+            *(self._download_sidecar(name) for _, name in pairs)
+        )
+
+        expiry = datetime.now(UTC) + timedelta(hours=24)
+        account_key = self.service_client.credential.account_key
+
+        tracks: list[TrackInfo] = []
+        for (ogg_name, _), meta in zip(pairs, sidecars, strict=True):
+            if meta is None:
+                continue
+            try:
+                sas_token = generate_blob_sas(
+                    account_name=self.account_name,
+                    container_name=self.sessions_container_name,
+                    blob_name=ogg_name,
+                    account_key=account_key,
+                    permission=BlobSasPermissions(read=True),
+                    expiry=expiry,
+                )
+                url = (
+                    f"https://{self.account_name}.blob.core.windows.net"
+                    f"/{self.sessions_container_name}/{ogg_name}?{sas_token}"
+                )
+                tracks.append(build_track_info(meta, url))
+            except (KeyError, TypeError) as exc:
+                log.warning(f"Skipping track {ogg_name}: {exc}")
+
+        tracks.sort(key=lambda t: t["started_at"])
+        return tracks
+
+    async def _download_sidecar(self, blob_name: str) -> dict[str, Any] | None:
+        try:
+            blob_client = self.sessions_client.get_blob_client(blob_name)
+            async with blob_client:
+                stream = await blob_client.download_blob()
+                data = await stream.readall()
+            return cast(dict[str, Any], json.loads(data.decode("utf-8")))
+        except Exception:
+            log.warning(f"Failed to load sidecar: {blob_name}", exc_info=True)
+            return None
 
 
     async def get_blob_content(self, blob_url: str, sas: bool = False) -> bytes | None:
