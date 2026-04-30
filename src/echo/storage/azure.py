@@ -40,6 +40,34 @@ class AzureStorage(Storage):
         content = await self.get_blob_content(blob_url)
         return content
 
+    async def fetch_recording_url(self, room_id: str) -> str | None:
+        from azure.core.exceptions import ResourceNotFoundError
+        from azure.storage.blob import BlobSasPermissions, generate_blob_sas
+
+        blob_name = f"recordings/{room_id}/recording.ogg"
+        blob_client = self.sessions_client.get_blob_client(blob_name)
+        try:
+            async with blob_client:
+                await blob_client.get_blob_properties()
+        except ResourceNotFoundError:
+            return None
+        except Exception:
+            log.warning(f"Failed to HEAD legacy recording for {room_id}", exc_info=True)
+            return None
+
+        sas_token = generate_blob_sas(
+            account_name=self.account_name,
+            container_name=self.sessions_container_name,
+            blob_name=blob_name,
+            account_key=self.service_client.credential.account_key,
+            permission=BlobSasPermissions(read=True),
+            expiry=datetime.now(UTC) + timedelta(hours=24),
+        )
+        return (
+            f"https://{self.account_name}.blob.core.windows.net"
+            f"/{self.sessions_container_name}/{blob_name}?{sas_token}"
+        )
+
     async def fetch_recording_tracks(self, room_id: str) -> list[TrackInfo]:
         from azure.storage.blob import BlobSasPermissions, generate_blob_sas
 
