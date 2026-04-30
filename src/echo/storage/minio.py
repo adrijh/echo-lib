@@ -7,7 +7,7 @@ from typing import Any, BinaryIO, cast
 from urllib.parse import urlparse
 
 from echo.logger import get_logger
-from echo.storage.base import Storage, TrackInfo, build_track_info
+from echo.storage.base import Storage, TrackInfo, TrackSource, build_track_info
 
 log = get_logger(__name__)
 
@@ -65,6 +65,32 @@ class MinioStorage(Storage):
         return await asyncio.to_thread(_head_and_sign)
 
     async def fetch_recording_tracks(self, room_id: str) -> list[TrackInfo]:
+        entries = await self._list_track_metadata(room_id)
+
+        tracks: list[TrackInfo] = []
+        for ogg_key, meta in entries:
+            try:
+                url = self.presign_client.generate_presigned_url(
+                    "get_object",
+                    Params={"Bucket": self.sessions_bucket, "Key": ogg_key},
+                    ExpiresIn=86400,
+                )
+                tracks.append(build_track_info(meta, url))
+            except (KeyError, TypeError) as exc:
+                log.warning(f"Skipping track {ogg_key}: {exc}")
+
+        return tracks
+
+    async def list_recording_sources(self, room_id: str) -> list[TrackSource]:
+        entries = await self._list_track_metadata(room_id)
+        return [
+            TrackSource(blob_name=blob_name, started_at=int(meta["started_at"]))
+            for blob_name, meta in entries
+        ]
+
+    async def _list_track_metadata(
+        self, room_id: str
+    ) -> list[tuple[str, dict[str, Any]]]:
         prefix = f"recordings/{room_id}/tracks/"
 
         def _list_keys() -> tuple[list[str], set[str]]:
@@ -87,22 +113,13 @@ class MinioStorage(Storage):
             *(self._download_sidecar(name) for _, name in pairs)
         )
 
-        tracks: list[TrackInfo] = []
-        for (ogg_key, _), meta in zip(pairs, sidecars, strict=True):
-            if meta is None:
-                continue
-            try:
-                url = self.presign_client.generate_presigned_url(
-                    "get_object",
-                    Params={"Bucket": self.sessions_bucket, "Key": ogg_key},
-                    ExpiresIn=86400,
-                )
-                tracks.append(build_track_info(meta, url))
-            except (KeyError, TypeError) as exc:
-                log.warning(f"Skipping track {ogg_key}: {exc}")
-
-        tracks.sort(key=lambda t: t["started_at"])
-        return tracks
+        entries = [
+            (ogg_key, meta)
+            for (ogg_key, _), meta in zip(pairs, sidecars, strict=True)
+            if meta is not None and "started_at" in meta
+        ]
+        entries.sort(key=lambda e: int(e[1]["started_at"]))
+        return entries
 
     async def _download_sidecar(self, key: str) -> dict[str, Any] | None:
         try:

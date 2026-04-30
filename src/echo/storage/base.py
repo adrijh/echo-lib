@@ -13,6 +13,11 @@ class TrackInfo(TypedDict):
     url: str
 
 
+class TrackSource(TypedDict):
+    blob_name: str
+    started_at: int
+
+
 def derive_role(publisher_identity: str, track_source: str) -> str:
     if publisher_identity.startswith("sip"):
         return "user"
@@ -46,6 +51,8 @@ class Storage(Protocol):
     async def fetch_recording_url(self, room_id: str) -> str | None: ...
 
     async def fetch_recording_tracks(self, room_id: str) -> list[TrackInfo]: ...
+
+    async def list_recording_sources(self, room_id: str) -> list[TrackSource]: ...
 
     async def get_blob_content(self, blob_url: str, sas: bool = False) -> bytes | None: ...
 
