@@ -16,13 +16,19 @@ class MinioStorage(Storage):
         import boto3
 
         self.endpoint = os.environ["MINIO_ENDPOINT"].rstrip("/")
+        public_endpoint = os.environ.get("MINIO_PUBLIC_ENDPOINT", self.endpoint).rstrip("/")
         self.sessions_bucket = os.environ["MINIO_BUCKET_SESSIONS"]
-        self.client = boto3.client(
-            "s3",
-            endpoint_url=self.endpoint,
-            aws_access_key_id=os.environ["MINIO_ACCESS_KEY"],
-            aws_secret_access_key=os.environ["MINIO_SECRET_KEY"],
-            region_name=os.environ["MINIO_REGION"],
+
+        creds = {
+            "aws_access_key_id": os.environ["MINIO_ACCESS_KEY"],
+            "aws_secret_access_key": os.environ["MINIO_SECRET_KEY"],
+            "region_name": os.environ["MINIO_REGION"],
+        }
+        self.client = boto3.client("s3", endpoint_url=self.endpoint, **creds)
+        self.presign_client = (
+            self.client
+            if public_endpoint == self.endpoint
+            else boto3.client("s3", endpoint_url=public_endpoint, **creds)
         )
 
     async def fetch_report(self, room_id: str) -> dict[str, Any]:
@@ -38,6 +44,25 @@ class MinioStorage(Storage):
     async def fetch_recording(self, room_id: str) -> bytes | None:
         blob_url = f"{self.endpoint}/{self.sessions_bucket}/recordings/{room_id}/recording.ogg"
         return await self.get_blob_content(blob_url)
+
+    async def fetch_recording_url(self, room_id: str) -> str | None:
+        key = f"recordings/{room_id}/recording.ogg"
+
+        def _head_and_sign() -> str | None:
+            try:
+                self.client.head_object(Bucket=self.sessions_bucket, Key=key)
+            except Exception:
+                return None
+            return cast(
+                str,
+                self.presign_client.generate_presigned_url(
+                    "get_object",
+                    Params={"Bucket": self.sessions_bucket, "Key": key},
+                    ExpiresIn=86400,
+                ),
+            )
+
+        return await asyncio.to_thread(_head_and_sign)
 
     async def fetch_recording_tracks(self, room_id: str) -> list[TrackInfo]:
         prefix = f"recordings/{room_id}/tracks/"
@@ -67,7 +92,7 @@ class MinioStorage(Storage):
             if meta is None:
                 continue
             try:
-                url = self.client.generate_presigned_url(
+                url = self.presign_client.generate_presigned_url(
                     "get_object",
                     Params={"Bucket": self.sessions_bucket, "Key": ogg_key},
                     ExpiresIn=86400,
@@ -162,7 +187,7 @@ class MinioStorage(Storage):
                 ContentType="application/json",
             )
 
-            presigned_url = self.client.generate_presigned_url(
+            presigned_url = self.presign_client.generate_presigned_url(
                 "get_object",
                 Params={
                     "Bucket": self.sessions_bucket,
