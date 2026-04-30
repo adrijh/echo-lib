@@ -43,6 +43,54 @@ def build_track_info(meta: dict[str, Any], url: str) -> TrackInfo:
     )
 
 
+def parse_track_filename(blob_name: str) -> dict[str, str]:
+    base = blob_name.rsplit("/", 1)[-1]
+    if base.endswith(".ogg"):
+        base = base[:-4]
+    parts = base.split("-")
+    if len(parts) < 4:
+        return {}
+    return {
+        "publisher_identity": "-".join(parts[:-3]),
+        "track_source": parts[-3],
+        "track_kind": parts[-2],
+        "track_id": parts[-1],
+    }
+
+
+def extract_audio_paths(json_name: str, payload: dict[str, Any]) -> list[str]:
+    paths: list[str] = []
+    files = payload.get("files")
+    if isinstance(files, list):
+        for entry in files:
+            if isinstance(entry, dict):
+                filename = entry.get("filename")
+                if isinstance(filename, str):
+                    paths.append(filename)
+    if not paths and json_name.endswith(".ogg.json"):
+        paths.append(json_name[:-5])
+    return paths
+
+
+def merge_track_metadata(
+    blob_name: str,
+    raw: dict[str, Any],
+) -> dict[str, Any] | None:
+    if "started_at" not in raw:
+        return None
+    parsed = parse_track_filename(blob_name)
+    merged = {
+        "started_at": int(raw["started_at"]),
+        "track_id": raw.get("track_id") or parsed.get("track_id"),
+        "publisher_identity": raw.get("publisher_identity") or parsed.get("publisher_identity"),
+        "track_source": raw.get("track_source") or parsed.get("track_source"),
+        "track_kind": raw.get("track_kind") or parsed.get("track_kind"),
+    }
+    if not all(merged.values()):
+        return None
+    return merged
+
+
 class Storage(Protocol):
     async def fetch_report(self, room_id: str) -> dict[str, Any]: ...
 

@@ -9,7 +9,14 @@ from typing import Any, BinaryIO, cast
 from azure.storage.blob.aio import BlobClient, BlobServiceClient
 
 from echo.logger import get_logger
-from echo.storage.base import Storage, TrackInfo, TrackSource, build_track_info
+from echo.storage.base import (
+    Storage,
+    TrackInfo,
+    TrackSource,
+    build_track_info,
+    extract_audio_paths,
+    merge_track_metadata,
+)
 
 log = get_logger(__name__)
 
@@ -109,25 +116,38 @@ class AzureStorage(Storage):
     ) -> list[tuple[str, dict[str, Any]]]:
         prefix = f"recordings/{room_id}/tracks/"
         ogg_names: list[str] = []
-        sidecar_names: set[str] = set()
+        json_names: list[str] = []
 
         async for blob in self.sessions_client.list_blobs(name_starts_with=prefix):
             name = blob.name
-            if name.endswith(".ogg.json"):
-                sidecar_names.add(name)
+            if name.endswith(".json"):
+                json_names.append(name)
             elif name.endswith(".ogg"):
                 ogg_names.append(name)
 
-        pairs = [(ogg, f"{ogg}.json") for ogg in ogg_names if f"{ogg}.json" in sidecar_names]
-        sidecars = await asyncio.gather(
-            *(self._download_sidecar(name) for _, name in pairs)
+        payloads = await asyncio.gather(
+            *(self._download_sidecar(name) for name in json_names)
         )
 
-        entries = [
-            (ogg_name, meta)
-            for (ogg_name, _), meta in zip(pairs, sidecars, strict=True)
-            if meta is not None and "started_at" in meta
-        ]
+        meta_by_audio: dict[str, dict[str, Any]] = {}
+        for json_name, payload in zip(json_names, payloads, strict=True):
+            if payload is None:
+                continue
+            for audio_path in extract_audio_paths(json_name, payload):
+                meta_by_audio[audio_path] = payload
+
+        entries: list[tuple[str, dict[str, Any]]] = []
+        for ogg_name in ogg_names:
+            raw = meta_by_audio.get(ogg_name)
+            if raw is None:
+                log.warning(f"No sidecar metadata for track {ogg_name}, skipping")
+                continue
+            merged = merge_track_metadata(ogg_name, raw)
+            if merged is None:
+                log.warning(f"Incomplete sidecar metadata for {ogg_name}, skipping")
+                continue
+            entries.append((ogg_name, merged))
+
         entries.sort(key=lambda e: int(e[1]["started_at"]))
         return entries
 

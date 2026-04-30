@@ -7,7 +7,14 @@ from typing import Any, BinaryIO, cast
 from urllib.parse import urlparse
 
 from echo.logger import get_logger
-from echo.storage.base import Storage, TrackInfo, TrackSource, build_track_info
+from echo.storage.base import (
+    Storage,
+    TrackInfo,
+    TrackSource,
+    build_track_info,
+    extract_audio_paths,
+    merge_track_metadata,
+)
 
 log = get_logger(__name__)
 
@@ -93,31 +100,44 @@ class MinioStorage(Storage):
     ) -> list[tuple[str, dict[str, Any]]]:
         prefix = f"recordings/{room_id}/tracks/"
 
-        def _list_keys() -> tuple[list[str], set[str]]:
+        def _list_keys() -> tuple[list[str], list[str]]:
             ogg_keys: list[str] = []
-            sidecar_keys: set[str] = set()
+            json_keys: list[str] = []
             paginator = self.client.get_paginator("list_objects_v2")
             for page in paginator.paginate(Bucket=self.sessions_bucket, Prefix=prefix):
                 for obj in page.get("Contents", []):
                     key = obj["Key"]
-                    if key.endswith(".ogg.json"):
-                        sidecar_keys.add(key)
+                    if key.endswith(".json"):
+                        json_keys.append(key)
                     elif key.endswith(".ogg"):
                         ogg_keys.append(key)
-            return ogg_keys, sidecar_keys
+            return ogg_keys, json_keys
 
-        ogg_keys, sidecar_keys = await asyncio.to_thread(_list_keys)
-        pairs = [(ogg, f"{ogg}.json") for ogg in ogg_keys if f"{ogg}.json" in sidecar_keys]
+        ogg_keys, json_keys = await asyncio.to_thread(_list_keys)
 
-        sidecars = await asyncio.gather(
-            *(self._download_sidecar(name) for _, name in pairs)
+        payloads = await asyncio.gather(
+            *(self._download_sidecar(name) for name in json_keys)
         )
 
-        entries = [
-            (ogg_key, meta)
-            for (ogg_key, _), meta in zip(pairs, sidecars, strict=True)
-            if meta is not None and "started_at" in meta
-        ]
+        meta_by_audio: dict[str, dict[str, Any]] = {}
+        for json_key, payload in zip(json_keys, payloads, strict=True):
+            if payload is None:
+                continue
+            for audio_path in extract_audio_paths(json_key, payload):
+                meta_by_audio[audio_path] = payload
+
+        entries: list[tuple[str, dict[str, Any]]] = []
+        for ogg_key in ogg_keys:
+            raw = meta_by_audio.get(ogg_key)
+            if raw is None:
+                log.warning(f"No sidecar metadata for track {ogg_key}, skipping")
+                continue
+            merged = merge_track_metadata(ogg_key, raw)
+            if merged is None:
+                log.warning(f"Incomplete sidecar metadata for {ogg_key}, skipping")
+                continue
+            entries.append((ogg_key, merged))
+
         entries.sort(key=lambda e: int(e[1]["started_at"]))
         return entries
 
