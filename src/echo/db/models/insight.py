@@ -8,6 +8,7 @@ from sqlalchemy import (
     Index,
     Text,
     func,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -62,4 +63,21 @@ class CallRecord(Base):
 
     processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    __table_args__ = (Index("ix_call_history_campaign_id", "campaign_id"),)
+    __table_args__ = (
+        Index("ix_call_history_campaign_id", "campaign_id"),
+        Index(
+            "ix_call_history_details_opportunity_processed",
+            "opportunity_id",
+            text("processed_at DESC"),
+        ),
+        Index(
+            "ix_call_history_details_room_id",
+            "room_id",
+            postgresql_where=text("room_id IS NOT NULL"),
+        ),
+        Index(
+            "ix_call_history_details_campaign_processed",
+            "campaign_id",
+            text("processed_at DESC"),
+        ),
+    )

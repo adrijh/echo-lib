@@ -5,6 +5,7 @@ from uuid import UUID
 from sqlalchemy import (
     JSON,
     DateTime,
+    Index,
     String,
     text,
 )
@@ -29,4 +30,12 @@ class Room(Base):
         default=list,
         server_default=text("'[]'::jsonb"),
         nullable=False,
+    )
+
+    __table_args__ = (
+        Index(
+            "ix_rooms_start_timestamp",
+            "start_timestamp",
+            postgresql_where=text("start_timestamp IS NOT NULL"),
+        ),
     )
