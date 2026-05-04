@@ -7,7 +7,14 @@ from typing import Any, BinaryIO, cast
 from urllib.parse import urlparse
 
 from echo.logger import get_logger
-from echo.storage.base import Storage
+from echo.storage.base import (
+    Storage,
+    TrackInfo,
+    TrackSource,
+    build_track_info,
+    extract_audio_paths,
+    merge_track_metadata,
+)
 
 log = get_logger(__name__)
 
@@ -16,13 +23,19 @@ class MinioStorage(Storage):
         import boto3
 
         self.endpoint = os.environ["MINIO_ENDPOINT"].rstrip("/")
+        public_endpoint = os.environ.get("MINIO_PUBLIC_ENDPOINT", self.endpoint).rstrip("/")
         self.sessions_bucket = os.environ["MINIO_BUCKET_SESSIONS"]
-        self.client = boto3.client(
-            "s3",
-            endpoint_url=self.endpoint,
-            aws_access_key_id=os.environ["MINIO_ACCESS_KEY"],
-            aws_secret_access_key=os.environ["MINIO_SECRET_KEY"],
-            region_name=os.environ["MINIO_REGION"],
+
+        creds = {
+            "aws_access_key_id": os.environ["MINIO_ACCESS_KEY"],
+            "aws_secret_access_key": os.environ["MINIO_SECRET_KEY"],
+            "region_name": os.environ["MINIO_REGION"],
+        }
+        self.client = boto3.client("s3", endpoint_url=self.endpoint, **creds)
+        self.presign_client = (
+            self.client
+            if public_endpoint == self.endpoint
+            else boto3.client("s3", endpoint_url=public_endpoint, **creds)
         )
 
     async def fetch_report(self, room_id: str) -> dict[str, Any]:
@@ -38,6 +51,107 @@ class MinioStorage(Storage):
     async def fetch_recording(self, room_id: str) -> bytes | None:
         blob_url = f"{self.endpoint}/{self.sessions_bucket}/recordings/{room_id}/recording.ogg"
         return await self.get_blob_content(blob_url)
+
+    async def fetch_recording_url(self, room_id: str) -> str | None:
+        key = f"recordings/{room_id}/recording.ogg"
+
+        def _head_and_sign() -> str | None:
+            try:
+                self.client.head_object(Bucket=self.sessions_bucket, Key=key)
+            except Exception:
+                return None
+            return cast(
+                str,
+                self.presign_client.generate_presigned_url(
+                    "get_object",
+                    Params={"Bucket": self.sessions_bucket, "Key": key},
+                    ExpiresIn=86400,
+                ),
+            )
+
+        return await asyncio.to_thread(_head_and_sign)
+
+    async def fetch_recording_tracks(self, room_id: str) -> list[TrackInfo]:
+        entries = await self._list_track_metadata(room_id)
+
+        tracks: list[TrackInfo] = []
+        for ogg_key, meta in entries:
+            try:
+                url = self.presign_client.generate_presigned_url(
+                    "get_object",
+                    Params={"Bucket": self.sessions_bucket, "Key": ogg_key},
+                    ExpiresIn=86400,
+                )
+                tracks.append(build_track_info(meta, url))
+            except (KeyError, TypeError) as exc:
+                log.warning(f"Skipping track {ogg_key}: {exc}")
+
+        return tracks
+
+    async def list_recording_sources(self, room_id: str) -> list[TrackSource]:
+        entries = await self._list_track_metadata(room_id)
+        return [
+            TrackSource(blob_name=blob_name, started_at=int(meta["started_at"]))
+            for blob_name, meta in entries
+        ]
+
+    async def _list_track_metadata(
+        self, room_id: str
+    ) -> list[tuple[str, dict[str, Any]]]:
+        prefix = f"recordings/{room_id}/tracks/"
+
+        def _list_keys() -> tuple[list[str], list[str]]:
+            ogg_keys: list[str] = []
+            json_keys: list[str] = []
+            paginator = self.client.get_paginator("list_objects_v2")
+            for page in paginator.paginate(Bucket=self.sessions_bucket, Prefix=prefix):
+                for obj in page.get("Contents", []):
+                    key = obj["Key"]
+                    if key.endswith(".json"):
+                        json_keys.append(key)
+                    elif key.endswith(".ogg"):
+                        ogg_keys.append(key)
+            return ogg_keys, json_keys
+
+        ogg_keys, json_keys = await asyncio.to_thread(_list_keys)
+
+        payloads = await asyncio.gather(
+            *(self._download_sidecar(name) for name in json_keys)
+        )
+
+        meta_by_audio: dict[str, dict[str, Any]] = {}
+        for json_key, payload in zip(json_keys, payloads, strict=True):
+            if payload is None:
+                continue
+            for audio_path in extract_audio_paths(json_key, payload):
+                meta_by_audio[audio_path] = payload
+
+        entries: list[tuple[str, dict[str, Any]]] = []
+        for ogg_key in ogg_keys:
+            raw = meta_by_audio.get(ogg_key)
+            if raw is None:
+                log.warning(f"No sidecar metadata for track {ogg_key}, skipping")
+                continue
+            merged = merge_track_metadata(ogg_key, raw)
+            if merged is None:
+                log.warning(f"Incomplete sidecar metadata for {ogg_key}, skipping")
+                continue
+            entries.append((ogg_key, merged))
+
+        entries.sort(key=lambda e: int(e[1]["started_at"]))
+        return entries
+
+    async def _download_sidecar(self, key: str) -> dict[str, Any] | None:
+        try:
+            def _get() -> bytes:
+                response = self.client.get_object(Bucket=self.sessions_bucket, Key=key)
+                return cast(bytes, response["Body"].read())
+
+            data = await asyncio.to_thread(_get)
+            return cast(dict[str, Any], json.loads(data.decode("utf-8")))
+        except Exception:
+            log.warning(f"Failed to load sidecar: {key}", exc_info=True)
+            return None
 
     async def get_blob_content(self, blob_url: str, sas: bool = False) -> bytes | None:
         try:
@@ -110,7 +224,7 @@ class MinioStorage(Storage):
                 ContentType="application/json",
             )
 
-            presigned_url = self.client.generate_presigned_url(
+            presigned_url = self.presign_client.generate_presigned_url(
                 "get_object",
                 Params={
                     "Bucket": self.sessions_bucket,

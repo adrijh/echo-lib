@@ -5,7 +5,6 @@ from datetime import UTC, datetime, timedelta
 from typing import Any, cast
 from urllib.parse import urlparse
 
-from azure.storage.blob.aio import BlobClient, BlobServiceClient
 from typing_extensions import deprecated
 
 from echo.logger import get_logger
@@ -38,6 +37,8 @@ async def get_blob_content(blob_url: str, sas: bool = False) -> bytes | None:
 
 @deprecated("Use storage class")
 async def get_azure_blob_content(blob_url: str, sas: bool = False) -> bytes | None:
+    from azure.storage.blob.aio import BlobClient
+
     try:
         if sas:
             client = BlobClient.from_blob_url(blob_url)
@@ -159,6 +160,7 @@ async def upload_report_to_azure_blob_storage(
     room_sid: str,
 ) -> str | None:
     from azure.storage.blob import BlobSasPermissions, generate_blob_sas
+    from azure.storage.blob.aio import BlobServiceClient
 
     json_data = json.dumps(report, indent=2)
     container = os.environ["AZURE_STORAGE_CONTAINER_SESSIONS_NAME"]

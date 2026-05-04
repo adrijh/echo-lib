@@ -90,17 +90,13 @@ async def add_langchain_chat(ctx: UserContext) -> None:
 
 
 async def add_livekit_chat(ctx: UserContext) -> None:
-    from livekit.agents import ChatContext
-
     ctx.channel = "voice"
 
-    livekit_ctx = ChatContext()
-    livekit_ctx.add_message(role="developer", content="a dev msg")
-    livekit_ctx.add_message(role="system", content="a sys prompt")
-    livekit_ctx.add_message(role="user", content="an user msg")
-    livekit_ctx.add_message(role="assistant", content="an ai msg")
-
-    chat = cast(Chat, list(livekit_ctx.to_provider_format("openai")[0]))
+    chat: Chat = [
+        {"role": "system", "content": "a sys prompt"},
+        {"role": "user", "content": "an user msg"},
+        {"role": "assistant", "content": "an ai msg"},
+    ]
     await ctx.add_chat(chat)
 
 
