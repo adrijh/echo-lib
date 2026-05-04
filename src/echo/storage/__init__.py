@@ -47,8 +47,5 @@ async def get_storage() -> Storage:
 
                     _storage = MinioStorage()
                 else:
-                    raise ValueError(
-                        f"Unknown STORAGE_PROVIDER: {provider!r} "
-                        "(expected 'azure' or 'minio')"
-                    )
+                    raise ValueError(f"Unknown STORAGE_PROVIDER: {provider!r} (expected 'azure' or 'minio')")
     return _storage
