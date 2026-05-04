@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class SalesforceCouponPayload(BaseModel):
@@ -17,11 +17,12 @@ class CallCooldown(BaseModel):
 class RunSteps(BaseModel):
     context: bool = True
     evaluations: bool = True
+    asesoria: bool = True
 
 
 class Capabilities(BaseModel):
     send_salesforce_coupon: SalesforceCouponPayload | None = None
     cooldown: CallCooldown | None = None
-    steps: RunSteps | None = None
+    steps: RunSteps = Field(default_factory=RunSteps)
 
     model_config = ConfigDict(extra="ignore")
