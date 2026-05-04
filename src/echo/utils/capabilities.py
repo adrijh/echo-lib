@@ -14,8 +14,14 @@ class CallCooldown(BaseModel):
         return self.ttl_days * 86400
 
 
+class RunSteps(BaseModel):
+    context: bool = True
+    evaluations: bool = True
+
+
 class Capabilities(BaseModel):
     send_salesforce_coupon: SalesforceCouponPayload | None = None
     cooldown: CallCooldown | None = None
+    steps: RunSteps | None = None
 
     model_config = ConfigDict(extra="ignore")
