@@ -20,16 +20,13 @@ from echo.storage.base import (
 
 log = get_logger(__name__)
 
+
 class AzureStorage(Storage):
     def __init__(self) -> None:
         self.account_name = os.environ["AZURE_ACCOUNT_NAME"]
         self.sessions_container_name = os.environ["AZURE_STORAGE_CONTAINER_SESSIONS_NAME"]
-        self.service_client = BlobServiceClient.from_connection_string(
-            os.environ["AZURE_STORAGE_CONNECTION_STRING"]
-        )
-        self.sessions_client = self.service_client.get_container_client(
-            self.sessions_container_name
-        )
+        self.service_client = BlobServiceClient.from_connection_string(os.environ["AZURE_STORAGE_CONNECTION_STRING"])
+        self.sessions_client = self.service_client.get_container_client(self.sessions_container_name)
 
     async def fetch_report(self, room_id: str, sas: bool = False) -> dict[str, Any]:
         blob_url = f"https://{self.account_name}.blob.core.windows.net/{self.sessions_container_name}/recordings/{room_id}/session-report.json"
@@ -40,7 +37,6 @@ class AzureStorage(Storage):
             raise RuntimeError("Blob content could not be loaded")
 
         return cast(dict[str, Any], json.loads(raw_bytes.decode("utf-8")))
-
 
     async def fetch_recording(self, room_id: str) -> bytes | None:
         blob_url = f"https://{self.account_name}.blob.core.windows.net/{self.sessions_container_name}/recordings/{room_id}/recording.ogg"
@@ -71,8 +67,7 @@ class AzureStorage(Storage):
             expiry=datetime.now(UTC) + timedelta(hours=24),
         )
         return (
-            f"https://{self.account_name}.blob.core.windows.net"
-            f"/{self.sessions_container_name}/{blob_name}?{sas_token}"
+            f"https://{self.account_name}.blob.core.windows.net/{self.sessions_container_name}/{blob_name}?{sas_token}"
         )
 
     async def fetch_recording_tracks(self, room_id: str) -> list[TrackInfo]:
@@ -106,14 +101,9 @@ class AzureStorage(Storage):
 
     async def list_recording_sources(self, room_id: str) -> list[TrackSource]:
         entries = await self._list_track_metadata(room_id)
-        return [
-            TrackSource(blob_name=blob_name, started_at=int(meta["started_at"]))
-            for blob_name, meta in entries
-        ]
+        return [TrackSource(blob_name=blob_name, started_at=int(meta["started_at"])) for blob_name, meta in entries]
 
-    async def _list_track_metadata(
-        self, room_id: str
-    ) -> list[tuple[str, dict[str, Any]]]:
+    async def _list_track_metadata(self, room_id: str) -> list[tuple[str, dict[str, Any]]]:
         prefix = f"recordings/{room_id}/tracks/"
         ogg_names: list[str] = []
         json_names: list[str] = []
@@ -125,9 +115,7 @@ class AzureStorage(Storage):
             elif name.endswith(".ogg"):
                 ogg_names.append(name)
 
-        payloads = await asyncio.gather(
-            *(self._download_sidecar(name) for name in json_names)
-        )
+        payloads = await asyncio.gather(*(self._download_sidecar(name) for name in json_names))
 
         meta_by_audio: dict[str, dict[str, Any]] = {}
         for json_name, payload in zip(json_names, payloads, strict=True):
@@ -161,7 +149,6 @@ class AzureStorage(Storage):
         except Exception:
             log.warning(f"Failed to load sidecar: {blob_name}", exc_info=True)
             return None
-
 
     async def get_blob_content(self, blob_url: str, sas: bool = False) -> bytes | None:
         try:
@@ -287,10 +274,7 @@ class AzureStorage(Storage):
         try:
             await self.sessions_client.upload_blob(blob_name, data, overwrite=True)
             log.debug(f"Uploaded blob: {self.sessions_container_name}/{blob_name}")
-            return (
-                f"https://{self.account_name}.blob.core.windows.net"
-                f"/{self.sessions_container_name}/{blob_name}"
-            )
+            return f"https://{self.account_name}.blob.core.windows.net/{self.sessions_container_name}/{blob_name}"
         except Exception:
             log.exception(f"Failed to upload blob: {blob_name}")
             raise
@@ -308,7 +292,8 @@ class AzureStorage(Storage):
     async def get_blob_size(self, url: str) -> int | None:
         try:
             blob_client = BlobClient.from_blob_url(
-                url, credential=os.environ["AZURE_ACCOUNT_KEY"],
+                url,
+                credential=os.environ["AZURE_ACCOUNT_KEY"],
             )
             async with blob_client:
                 props = await blob_client.get_blob_properties()

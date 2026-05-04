@@ -18,6 +18,7 @@ from echo.storage.base import (
 
 log = get_logger(__name__)
 
+
 class MinioStorage(Storage):
     def __init__(self) -> None:
         import boto3
@@ -90,14 +91,9 @@ class MinioStorage(Storage):
 
     async def list_recording_sources(self, room_id: str) -> list[TrackSource]:
         entries = await self._list_track_metadata(room_id)
-        return [
-            TrackSource(blob_name=blob_name, started_at=int(meta["started_at"]))
-            for blob_name, meta in entries
-        ]
+        return [TrackSource(blob_name=blob_name, started_at=int(meta["started_at"])) for blob_name, meta in entries]
 
-    async def _list_track_metadata(
-        self, room_id: str
-    ) -> list[tuple[str, dict[str, Any]]]:
+    async def _list_track_metadata(self, room_id: str) -> list[tuple[str, dict[str, Any]]]:
         prefix = f"recordings/{room_id}/tracks/"
 
         def _list_keys() -> tuple[list[str], list[str]]:
@@ -115,9 +111,7 @@ class MinioStorage(Storage):
 
         ogg_keys, json_keys = await asyncio.to_thread(_list_keys)
 
-        payloads = await asyncio.gather(
-            *(self._download_sidecar(name) for name in json_keys)
-        )
+        payloads = await asyncio.gather(*(self._download_sidecar(name) for name in json_keys))
 
         meta_by_audio: dict[str, dict[str, Any]] = {}
         for json_key, payload in zip(json_keys, payloads, strict=True):
@@ -143,6 +137,7 @@ class MinioStorage(Storage):
 
     async def _download_sidecar(self, key: str) -> dict[str, Any] | None:
         try:
+
             def _get() -> bytes:
                 response = self.client.get_object(Bucket=self.sessions_bucket, Key=key)
                 return cast(bytes, response["Body"].read())
@@ -216,7 +211,6 @@ class MinioStorage(Storage):
         blob_name = f"recordings/{room_sid}/session-report.json"
 
         try:
-
             self.client.put_object(
                 Bucket=self.sessions_bucket,
                 Key=blob_name,
@@ -279,6 +273,7 @@ class MinioStorage(Storage):
         data: bytes | BinaryIO,
     ) -> str:
         try:
+
             def _upload() -> None:
                 self.client.put_object(
                     Bucket=self.sessions_bucket,
@@ -298,9 +293,7 @@ class MinioStorage(Storage):
         bucket = parsed.path.split("/")[1]
         key = "/".join(parsed.path.split("/")[2:])
 
-        response = await asyncio.to_thread(
-            self.client.get_object, Bucket=bucket, Key=key
-        )
+        response = await asyncio.to_thread(self.client.get_object, Bucket=bucket, Key=key)
         body = response["Body"]
 
         try:
