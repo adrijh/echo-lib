@@ -1,6 +1,6 @@
 [project]
 name = "echo"
-version = "0.2.3b1"
+version = "0.2.3b2"
 description = "Add your description here"
 readme = "README.md"
 authors = [
@@ -19,7 +19,6 @@ langfuse = [
 db = [
     "sqlalchemy[asyncio]>=2.0.46",
     "asyncpg>=0.31.0",
-    "alembic>=1.18.4",
 ]
 storage-azure = [
     "azure-storage-blob>=12.28.0",
@@ -41,6 +40,11 @@ otel = [
     "opentelemetry-sdk>=1.39.1",
     "opentelemetry-exporter-otlp>=1.39.1",
 ]
+
+agent = [
+    "echo[otel,langfuse,db,queue,storage-azure,storage-s3]",
+]
+
 all = [
     "echo[db,storage-azure,storage-s3,queue,redis,llm,otel]",
 ]
@@ -61,6 +65,7 @@ dev = [
     "pre-commit>=4.5.1",
     "phonenumbers>=9.0.24",
     "pandas>=3.0.1",
+    "alembic>=1.18.4",
 ]
 
 [tool.pytest.ini_options]
