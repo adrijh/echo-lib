@@ -1,6 +1,6 @@
 [project]
 name = "echo"
-version = "0.2.3b2"
+version = "0.2.3"
 description = "Add your description here"
 readme = "README.md"
 authors = [
