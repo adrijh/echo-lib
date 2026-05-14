@@ -21,6 +21,7 @@ class CampaignUserStatus(enum.Enum):
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
     FAILED = "failed"
+    EXCLUDED = "excluded"
 
 
 class AttemptData(TypedDict):
