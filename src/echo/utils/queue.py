@@ -3,9 +3,11 @@ from __future__ import annotations
 import asyncio
 import os
 from collections.abc import Awaitable, Callable
-from typing import Any, Protocol
+from typing import Any, Protocol, cast
+from urllib.parse import quote
 
 import aio_pika
+import httpx
 from aio_pika.abc import (
     AbstractChannel,
     AbstractQueue,
@@ -22,6 +24,129 @@ log = get_logger(__name__)
 class Queue(Protocol):
     async def start(self, callback: Callable[[Any], Awaitable[Any]]) -> None: ...
     async def stop(self) -> None: ...
+
+class RabbitManager:
+    """Management-API client for RabbitMQ.
+
+    Talks to the HTTP management plugin (default port 15672) rather than AMQP,
+    since listing/inspecting queues server-side is only exposed there.
+    """
+
+    def __init__(
+        self,
+        host: str,
+        management_port: int,
+        username: str,
+        password: str,
+        vhost: str = "/",
+        *,
+        timeout: float = 10.0,
+    ) -> None:
+        self._vhost = vhost
+        self._vhost_encoded = quote(vhost, safe="")
+        self._client = httpx.AsyncClient(
+            base_url=f"http://{host}:{management_port}",
+            auth=(username, password),
+            timeout=timeout,
+        )
+
+    @classmethod
+    def from_env(cls) -> RabbitManager:
+        return cls(
+            host=os.environ["RABBITMQ_HOST"],
+            management_port=int(os.environ.get("RABBITMQ_MANAGEMENT_PORT", "15672")),
+            username=os.environ["RABBITMQ_USER"],
+            password=os.environ["RABBITMQ_PASSWORD"],
+            vhost=os.environ.get("RABBITMQ_VHOST", "/"),
+        )
+
+    async def close(self) -> None:
+        await self._client.aclose()
+
+    async def __aenter__(self) -> RabbitManager:
+        return self
+
+    async def __aexit__(self, *_: Any) -> None:
+        await self.close()
+
+    async def list_queues(
+        self,
+        *,
+        name_regex: str | None = None,
+        columns: list[str] | None = None,
+    ) -> list[dict[str, Any]]:
+        """List queues in the configured vhost, optionally filtered server-side."""
+        params: dict[str, str] = {"pagination": "false"}
+        if name_regex is not None:
+            params["name"] = name_regex
+            params["use_regex"] = "true"
+        if columns:
+            # The API supports trimming the payload — useful when you have thousands of queues.
+            params["columns"] = ",".join(columns)
+
+        resp = await self._client.get(
+            f"/api/queues/{self._vhost_encoded}",
+            params=params,
+        )
+        resp.raise_for_status()
+        return cast(list[dict[str, Any]], resp.json())
+
+    async def list_queues_with_prefix(
+        self,
+        prefix: str,
+        *,
+        columns: list[str] | None = None,
+    ) -> list[dict[str, Any]]:
+        """List queues whose name starts with `prefix`."""
+        # Escape regex metachars so '.' in 'echo.campaign.' isn't treated as a wildcard.
+        import re
+        escaped = re.escape(prefix)
+        return await self.list_queues(name_regex=f"^{escaped}", columns=columns)
+
+    async def queue_names_with_prefix(self, prefix: str) -> list[str]:
+        """List queue names which start with `prefix`."""
+        queues = await self.list_queues_with_prefix(prefix, columns=["name"])
+        return [q["name"] for q in queues]
+
+    async def get_queue(self, name: str) -> dict[str, Any]:
+        resp = await self._client.get(
+            f"/api/queues/{self._vhost_encoded}/{quote(name, safe='')}",
+        )
+        resp.raise_for_status()
+        return cast(dict[str, Any], resp.json())
+
+    async def purge_queue(self, name: str) -> None:
+        resp = await self._client.delete(
+            f"/api/queues/{self._vhost_encoded}/{quote(name, safe='')}/contents",
+        )
+        resp.raise_for_status()
+
+    async def delete_queue(
+        self,
+        name: str,
+        *,
+        if_empty: bool = False,
+        if_unused: bool = False,
+    ) -> None:
+        params: dict[str, str] = {}
+        if if_empty:
+            params["if-empty"] = "true"
+        if if_unused:
+            params["if-unused"] = "true"
+
+        resp = await self._client.delete(
+            f"/api/queues/{self._vhost_encoded}/{quote(name, safe='')}",
+            params=params,
+        )
+        resp.raise_for_status()
+
+    async def purge_queues_with_prefix(self, prefix: str) -> list[str]:
+        """Purge every queue matching `prefix`. Returns the names that were purged."""
+        names = await self.queue_names_with_prefix(prefix)
+        for name in names:
+            await self.purge_queue(name)
+            log.info("purged queue", extra={"queue": name})
+        return names
 
 
 class RabbitConnection:
@@ -125,6 +250,8 @@ class RabbitQueue:
             routing_key=self.queue.name,
         )
 
+_manager: RabbitManager | None = None
+_manager_lock = asyncio.Lock()
 
 _connection: RabbitConnection | None = None
 _queues: dict[str, RabbitQueue] = {}
@@ -167,3 +294,14 @@ async def get_queue(
                     )
 
     return _queues[name]
+
+
+async def get_rabbit_manager() -> RabbitManager:
+    global _manager
+
+    if _manager is None:
+        async with _manager_lock:
+            if _manager is None:
+                _manager = RabbitManager.from_env()
+
+    return _manager
