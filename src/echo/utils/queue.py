@@ -3,15 +3,17 @@ from __future__ import annotations
 import asyncio
 import os
 from collections.abc import Awaitable, Callable
-from typing import Any, Protocol, cast
+from typing import Any, Literal, NotRequired, Protocol, TypedDict, cast
 from urllib.parse import quote
 
 import aio_pika
 import httpx
 from aio_pika.abc import (
     AbstractChannel,
+    AbstractIncomingMessage,
     AbstractQueue,
     AbstractRobustConnection,
+    TimeoutType,
 )
 from pamqp.commands import Queue as PamQueue
 
@@ -21,9 +23,166 @@ from echo.logger import get_logger
 log = get_logger(__name__)
 
 
+class QueueGoneError(Exception):
+    """The queue no longer exists or the channel to it is dead."""
+
+
 class Queue(Protocol):
     async def start(self, callback: Callable[[Any], Awaitable[Any]]) -> None: ...
     async def stop(self) -> None: ...
+    async def get(
+        self,
+        *,
+        no_ack: bool = False,
+        timeout: TimeoutType = 5,
+    ) -> AbstractIncomingMessage | None: ...
+    async def send_event(
+        self,
+        event: events.BaseEvent,
+        delay_ms: int | None = None,
+    ) -> None: ...
+    async def purge(self) -> bool: ...
+
+
+class QueueInfo(TypedDict):
+    name: str
+    vhost: str
+    messages: NotRequired[int]
+    messages_ready: NotRequired[int]
+    messages_unacknowledged: NotRequired[int]
+    consumers: NotRequired[int]
+    state: NotRequired[Literal["running", "idle", "flow", "down"]]
+    type: NotRequired[str]
+    durable: NotRequired[bool]
+    node: NotRequired[str]
+    message_stats: NotRequired[dict[str, Any]]
+
+
+class QueueManager(Protocol):
+    async def list_queues_with_prefix(self, prefix: str) -> list[QueueInfo]: ...
+    async def get_queue(self, name: str, **kwargs: Any) -> Queue: ...
+
+
+class RabbitConnection:
+    def __init__(self, conn: AbstractRobustConnection) -> None:
+        self._conn = conn
+        self._channels: list[AbstractChannel] = []
+
+    @classmethod
+    async def connect(cls) -> RabbitConnection:
+        conn = await aio_pika.connect_robust(
+            host=os.environ["RABBITMQ_HOST"],
+            port=int(os.environ["RABBITMQ_PORT"]),
+            login=os.environ["RABBITMQ_USER"],
+            password=os.environ["RABBITMQ_PASSWORD"],
+        )
+        return cls(conn)
+
+    async def create_queue(
+        self,
+        name: str,
+        *,
+        prefetch: int = 1,
+        durable: bool = False,
+    ) -> RabbitQueue:
+        channel = await self._conn.channel()
+        await channel.set_qos(prefetch_count=prefetch)
+
+        queue = await channel.declare_queue(name, durable=durable)
+
+        self._channels.append(channel)
+
+        return RabbitQueue(self, channel=channel, queue=queue)
+
+    async def get_queue(
+        self,
+        name: str,
+        *,
+        prefetch: int = 1,
+    ) -> RabbitQueue:
+        channel = await self._conn.channel()
+        await channel.set_qos(prefetch_count=prefetch)
+
+        queue = await channel.get_queue(name)
+
+        self._channels.append(channel)
+
+        return RabbitQueue(self, channel=channel, queue=queue)
+
+    async def close(self) -> None:
+        for ch in self._channels:
+            await ch.close()
+
+        await self._conn.close()
+
+
+class RabbitQueue:
+    def __init__(
+        self,
+        conn: RabbitConnection,
+        channel: AbstractChannel,
+        queue: AbstractQueue,
+    ) -> None:
+        self.conn = conn
+        self.channel = channel
+        self.queue = queue
+
+    async def get(
+        self,
+        *,
+        no_ack: bool = False,
+        timeout: TimeoutType = 5,
+    ) -> AbstractIncomingMessage | None:
+        if self.channel.is_closed:
+            raise QueueGoneError(f"Channel for queue {self.queue.name} is closed")
+        try:
+            return await self.queue.get(
+                fail=False,
+                no_ack=no_ack,
+                timeout=timeout,
+            )
+        except aio_pika.exceptions.ChannelClosed as e:
+            raise QueueGoneError(f"Queue {self.queue.name} is gone") from e
+        except aio_pika.exceptions.ChannelInvalidStateError as e:
+            raise QueueGoneError(f"Channel for queue {self.queue.name} is invalid") from e
+
+    async def stop(self) -> None:
+        await self.channel.close()
+
+    async def purge(self) -> bool:
+        res = await self.queue.purge()
+        return isinstance(res, PamQueue.PurgeOk)
+
+    async def start(self, callback: Callable[[Any], Awaitable[Any]]) -> None:
+        await self.queue.consume(callback)
+
+    @staticmethod
+    async def _get_queue_connection() -> AbstractRobustConnection:
+        return await aio_pika.connect_robust(
+            host=os.environ["RABBITMQ_HOST"],
+            port=int(os.environ["RABBITMQ_PORT"]),
+            login=os.environ["RABBITMQ_USER"],
+            password=os.environ["RABBITMQ_PASSWORD"],
+        )
+
+    async def send_event(
+        self,
+        event: events.BaseEvent,
+        delay_ms: int | None = None,
+    ) -> None:
+        body: bytes = event.model_dump_json().encode()
+
+        message = aio_pika.Message(
+            body=body,
+            delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
+            content_type="application/json",
+            expiration=delay_ms if delay_ms is not None else None,
+        )
+
+        await self.channel.default_exchange.publish(
+            message,
+            routing_key=self.queue.name,
+        )
 
 class RabbitManager:
     """Management-API client for RabbitMQ.
@@ -103,152 +262,49 @@ class RabbitManager:
         escaped = re.escape(prefix)
         return await self.list_queues(name_regex=f"^{escaped}", columns=columns)
 
-    async def queue_names_with_prefix(self, prefix: str) -> list[str]:
-        """List queue names which start with `prefix`."""
-        queues = await self.list_queues_with_prefix(prefix, columns=["name"])
-        return [q["name"] for q in queues]
-
-    async def get_queue(self, name: str) -> dict[str, Any]:
-        resp = await self._client.get(
-            f"/api/queues/{self._vhost_encoded}/{quote(name, safe='')}",
-        )
-        resp.raise_for_status()
-        return cast(dict[str, Any], resp.json())
-
-    async def purge_queue(self, name: str) -> None:
-        resp = await self._client.delete(
-            f"/api/queues/{self._vhost_encoded}/{quote(name, safe='')}/contents",
-        )
-        resp.raise_for_status()
-
-    async def delete_queue(
-        self,
-        name: str,
-        *,
-        if_empty: bool = False,
-        if_unused: bool = False,
-    ) -> None:
-        params: dict[str, str] = {}
-        if if_empty:
-            params["if-empty"] = "true"
-        if if_unused:
-            params["if-unused"] = "true"
-
-        resp = await self._client.delete(
-            f"/api/queues/{self._vhost_encoded}/{quote(name, safe='')}",
-            params=params,
-        )
-        resp.raise_for_status()
-
-    async def purge_queues_with_prefix(self, prefix: str) -> list[str]:
-        """Purge every queue matching `prefix`. Returns the names that were purged."""
-        names = await self.queue_names_with_prefix(prefix)
-        for name in names:
-            await self.purge_queue(name)
-            log.info("purged queue", extra={"queue": name})
-        return names
+    async def get_queue(self, name: str, **kwargs: Any) -> RabbitQueue:
+        return await get_queue(name, **kwargs)
 
 
-class RabbitConnection:
-    def __init__(self, conn: AbstractRobustConnection) -> None:
-        self._conn = conn
-        self._channels: list[AbstractChannel] = []
-
-    @classmethod
-    async def connect(cls) -> RabbitConnection:
-        conn = await aio_pika.connect_robust(
-            host=os.environ["RABBITMQ_HOST"],
-            port=int(os.environ["RABBITMQ_PORT"]),
-            login=os.environ["RABBITMQ_USER"],
-            password=os.environ["RABBITMQ_PASSWORD"],
-        )
-        return cls(conn)
-
-    async def create_queue(
-        self,
-        name: str,
-        *,
-        prefetch: int = 1,
-        durable: bool = False,
-    ) -> RabbitQueue:
-        channel = await self._conn.channel()
-        await channel.set_qos(prefetch_count=prefetch)
-
-        queue = await channel.declare_queue(name, durable=durable)
-
-        self._channels.append(channel)
-
-        return RabbitQueue(self, channel=channel, queue=queue)
-
-    async def get_queue(
-        self,
-        name: str,
-        *,
-        prefetch: int = 1,
-    ) -> RabbitQueue:
-        channel = await self._conn.channel()
-        await channel.set_qos(prefetch_count=prefetch)
-
-        queue = await channel.get_queue(name)
-
-        self._channels.append(channel)
-
-        return RabbitQueue(self, channel=channel, queue=queue)
-
-    async def close(self) -> None:
-        for ch in self._channels:
-            await ch.close()
-
-        await self._conn.close()
+    # async def queue_names_with_prefix(self, prefix: str) -> list[str]:
+    #     """List queue names which start with `prefix`."""
+    #     queues = await self.list_queues_with_prefix(prefix, columns=["name"])
+    #     return [q["name"] for q in queues]
+    #
+    # async def purge_queue(self, name: str) -> None:
+    #     resp = await self._client.delete(
+    #         f"/api/queues/{self._vhost_encoded}/{quote(name, safe='')}/contents",
+    #     )
+    #     resp.raise_for_status()
+    #
+    # async def delete_queue(
+    #     self,
+    #     name: str,
+    #     *,
+    #     if_empty: bool = False,
+    #     if_unused: bool = False,
+    # ) -> None:
+    #     params: dict[str, str] = {}
+    #     if if_empty:
+    #         params["if-empty"] = "true"
+    #     if if_unused:
+    #         params["if-unused"] = "true"
+    #
+    #     resp = await self._client.delete(
+    #         f"/api/queues/{self._vhost_encoded}/{quote(name, safe='')}",
+    #         params=params,
+    #     )
+    #     resp.raise_for_status()
+    #
+    # async def purge_queues_with_prefix(self, prefix: str) -> list[str]:
+    #     """Purge every queue matching `prefix`. Returns the names that were purged."""
+    #     names = await self.queue_names_with_prefix(prefix)
+    #     for name in names:
+    #         await self.purge_queue(name)
+    #         log.info("purged queue", extra={"queue": name})
+    #     return names
 
 
-class RabbitQueue:
-    def __init__(
-        self,
-        conn: RabbitConnection,
-        channel: AbstractChannel,
-        queue: AbstractQueue,
-    ) -> None:
-        self.conn = conn
-        self.channel = channel
-        self.queue = queue
-
-    async def stop(self) -> None:
-        await self.channel.close()
-
-    async def purge(self) -> PamQueue.PurgeOk:
-        return await self.queue.purge()
-
-    async def start(self, callback: Callable[[Any], Awaitable[Any]]) -> None:
-        await self.queue.consume(callback)
-
-    @staticmethod
-    async def _get_queue_connection() -> AbstractRobustConnection:
-        return await aio_pika.connect_robust(
-            host=os.environ["RABBITMQ_HOST"],
-            port=int(os.environ["RABBITMQ_PORT"]),
-            login=os.environ["RABBITMQ_USER"],
-            password=os.environ["RABBITMQ_PASSWORD"],
-        )
-
-    async def send_event(
-        self,
-        event: events.BaseEvent,
-        delay_ms: int | None = None,
-    ) -> None:
-        body: bytes = event.model_dump_json().encode()
-
-        message = aio_pika.Message(
-            body=body,
-            delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
-            content_type="application/json",
-            expiration=delay_ms if delay_ms is not None else None,
-        )
-
-        await self.channel.default_exchange.publish(
-            message,
-            routing_key=self.queue.name,
-        )
 
 _manager: RabbitManager | None = None
 _manager_lock = asyncio.Lock()
