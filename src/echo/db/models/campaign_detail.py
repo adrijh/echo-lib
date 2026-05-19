@@ -1,8 +1,9 @@
 import enum
 import uuid
+from datetime import datetime
 from typing import TYPE_CHECKING, NotRequired, TypedDict
 
-from sqlalchemy import Enum, ForeignKey, Index, String, UniqueConstraint, func
+from sqlalchemy import DateTime, Enum, ForeignKey, Index, String, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import JSON, UUID
 from sqlalchemy.ext.mutable import MutableList
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -59,6 +60,11 @@ class CampaignDetail(Base):
         MutableList.as_mutable(JSON),
         default=list,
         nullable=False,
+    )
+    
+    last_called_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
     )
 
     campaign: Mapped["Campaign"] = relationship(back_populates="users")
