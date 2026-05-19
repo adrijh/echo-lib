@@ -12,6 +12,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+langfuse = [
+    "langfuse>=3.12.1",
+]
 db = [
     "sqlalchemy[asyncio]>=2.0.46",
     "asyncpg>=0.31.0",
@@ -38,7 +41,7 @@ otel = [
     "opentelemetry-exporter-otlp>=1.39.1",
 ]
 agent = [
-    "echo[storage-azure,storage-s3,queue,otel]",
+    "echo[otel,langfuse,db,storage-azure,storage-s3,queue]",
 ]
 all = [
     "echo[db,storage-azure,storage-s3,queue,redis,llm,otel]",
