@@ -18,12 +18,12 @@ from sqlalchemy.dialects.postgresql import (
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
-from echo.db.agents.base import Base
+from echo.db.agents.base import AgentsBase
 
 SLUG_PATTERN = r"^[a-z][a-z0-9-]{0,63}$"
 
 
-class AgentORM(Base):
+class AgentORM(AgentsBase):
     """Persistent agent definition.
 
     Tenant + slug is the addressable name pair. user_id records the creator

@@ -14,7 +14,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from echo.db.agents.base import Base
+from echo.db.agents.base import AgentsBase
 from echo.db.agents.models.agent import SLUG_PATTERN
 
 if TYPE_CHECKING:
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from echo.db.agents.models.user import UserORM
 
 
-class TenantORM(Base):
+class TenantORM(AgentsBase):
     __tablename__ = "tenants"
     __table_args__ = (
         CheckConstraint(f"slug ~ '{SLUG_PATTERN}'", name="ck_tenants_slug_kebab"),
@@ -51,7 +51,7 @@ class TenantORM(Base):
     )
 
 
-class TenantMembershipORM(Base):
+class TenantMembershipORM(AgentsBase):
     __tablename__ = "tenant_memberships"
     __table_args__ = (
         UniqueConstraint("user_id", "tenant_id", name="uq_membership_user_tenant"),

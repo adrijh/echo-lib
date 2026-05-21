@@ -8,10 +8,10 @@ from sqlalchemy.dialects.postgresql import (
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
-from echo.db.agents.base import Base
+from echo.db.agents.base import AgentsBase
 
 
-class RoleORM(Base):
+class RoleORM(AgentsBase):
     __tablename__ = "roles"
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -29,7 +29,7 @@ class RoleORM(Base):
 
 membership_roles = Table(
     "membership_roles",
-    Base.metadata,
+    AgentsBase.metadata,
     Column(
         "membership_id",
         PGUUID(as_uuid=True),

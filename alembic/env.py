@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from sqlalchemy import MetaData, pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.schema import CreateSchema
 
 from alembic import context
 from echo.db.base import build_connection_string
@@ -29,9 +30,9 @@ TARGET_SCHEMA = config.get_main_option("target_schema") or None
 def get_target_metadata() -> MetaData:
     if TARGET_SCHEMA == "agents":
         from echo.db.agents import models  # noqa: F401  (registers tables)
-        from echo.db.agents.base import Base
+        from echo.db.agents.base import AgentsBase
 
-        return Base.metadata
+        return AgentsBase.metadata
 
     import echo.db  # noqa: F401  (registers core models)
     from echo.db.base import Base
@@ -74,6 +75,13 @@ def run_migrations_offline() -> None:
 
 
 def do_run_migrations(connection: Connection) -> None:
+    if TARGET_SCHEMA:
+        # alembic_version lives in TARGET_SCHEMA, and alembic creates it before
+        # running the first migration, so the schema must already exist. Commit
+        # it so it's visible once alembic opens its own transaction below.
+        connection.execute(CreateSchema(TARGET_SCHEMA, if_not_exists=True))
+        connection.commit()
+
     context.configure(
         connection=connection,
         target_metadata=target_metadata,

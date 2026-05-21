@@ -14,10 +14,10 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from echo.db.agents.base import Base
+from echo.db.agents.base import AgentsBase
 
 
-class DocumentORM(Base):
+class DocumentORM(AgentsBase):
     """Persistent reference to a document blob in object storage.
 
     Documents are agent context files uploaded by users and scoped at one of

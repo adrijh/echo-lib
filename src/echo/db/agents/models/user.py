@@ -6,13 +6,13 @@ from sqlalchemy import Boolean, DateTime, String, func
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from echo.db.agents.base import Base
+from echo.db.agents.base import AgentsBase
 
 if TYPE_CHECKING:
     from echo.db.agents.models.tenant import TenantMembershipORM
 
 
-class UserORM(Base):
+class UserORM(AgentsBase):
     __tablename__ = "users"
 
     id: Mapped[uuid.UUID] = mapped_column(
