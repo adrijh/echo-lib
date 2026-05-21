@@ -16,6 +16,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from echo.db.agents.base import AgentsBase
 from echo.db.agents.models.agent import SLUG_PATTERN
+from echo.db.agents.models.role import membership_roles
 
 if TYPE_CHECKING:
     from echo.db.agents.models.role import RoleORM
@@ -73,7 +74,7 @@ class TenantMembershipORM(AgentsBase):
     user: Mapped["UserORM"] = relationship(back_populates="memberships")
     tenant: Mapped[TenantORM] = relationship(back_populates="memberships")
     roles: Mapped[list["RoleORM"]] = relationship(
-        secondary="membership_roles", lazy="selectin"
+        secondary=membership_roles, lazy="selectin"
     )
 
     @property
