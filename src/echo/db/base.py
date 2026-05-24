@@ -73,9 +73,17 @@ def build_dsn(
     return f"postgresql://{user}:{password}@{host}:{port}/{database}"
 
 
-def create_engine(connection_string: str | None = None) -> AsyncEngine:
+def create_engine(
+    connection_string: str | None = None,
+    *,
+    search_path: str | None = None,
+) -> AsyncEngine:
     if not connection_string:
         connection_string = build_connection_string()
+
+    connect_args: dict[str, Any] = {}
+    if search_path:
+        connect_args["server_settings"] = {"search_path": search_path}
 
     return create_async_engine(
         connection_string,
@@ -83,6 +91,7 @@ def create_engine(connection_string: str | None = None) -> AsyncEngine:
         pool_size=10,
         max_overflow=20,
         pool_pre_ping=True,
+        connect_args=connect_args,
     )
 
 

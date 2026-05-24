@@ -1,62 +1,73 @@
 import asyncio
 from logging.config import fileConfig
 from pathlib import Path
+from typing import Any
 
 from dotenv import load_dotenv
-from sqlalchemy import pool
+from sqlalchemy import MetaData, pool
 from sqlalchemy.engine import Connection
-from sqlalchemy.ext.asyncio import async_engine_from_config
+from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.schema import CreateSchema
 
 from alembic import context
-from echo.db.base import Base, build_connection_string
-from echo.db.models.adversary import Adversary  # noqa: F401
+from echo.db.base import build_connection_string
 
 ENV_FILE = Path(__file__).parent / ".." / ".env"
 load_dotenv(ENV_FILE)
 
-# this is the Alembic Config object, which provides
-# access to the values within the .ini file in use.
 config = context.config
 
-# Interpret the config file for Python logging.
-# This line sets up loggers basically.
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# add your model's MetaData object here
-# for 'autogenerate' support
-# from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
-target_metadata = Base.metadata
-config.set_main_option(
-    "sqlalchemy.url",
-    build_connection_string(),
-)
+# Which schema this run targets, chosen by the active config section
+# (`alembic --name <section>`). Empty/absent means the core schema, which
+# keeps the historical behaviour: default search_path and the alembic_version
+# table in the connection's default schema.
+TARGET_SCHEMA = config.get_main_option("target_schema") or None
 
-# other values from the config, defined by the needs of env.py,
-# can be acquired:
-# my_important_option = config.get_main_option("my_important_option")
-# ... etc.
+
+def get_target_metadata() -> MetaData:
+    if TARGET_SCHEMA == "agents":
+        from echo.db.agents import models  # noqa: F401  (registers tables)
+        from echo.db.agents.base import AgentsBase
+
+        return AgentsBase.metadata
+
+    import echo.db  # noqa: F401  (registers core models)
+    from echo.db.base import Base
+    from echo.db.models import adversary  # noqa: F401
+
+    return Base.metadata
+
+
+target_metadata = get_target_metadata()
+
+
+def include_object(
+    obj: Any,
+    name: str | None,
+    type_: str,
+    reflected: bool,
+    compare_to: Any,
+) -> bool:
+    # Don't let autogenerate drop reflected tables that aren't part of our
+    # metadata (e.g. langgraph checkpoint/store tables sharing the schema).
+    if type_ == "table" and reflected and name not in target_metadata.tables:
+        return False
+    return True
 
 
 def run_migrations_offline() -> None:
-    """Run migrations in 'offline' mode.
-
-    This configures the context with just a URL
-    and not an Engine, though an Engine is acceptable
-    here as well.  By skipping the Engine creation
-    we don't even need a DBAPI to be available.
-
-    Calls to context.execute() here emit the given string to the
-    script output.
-
-    """
-    url = config.get_main_option("sqlalchemy.url")
+    """Run migrations in 'offline' mode."""
     context.configure(
-        url=url,
+        url=build_connection_string(),
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        compare_type=True,
+        version_table_schema=TARGET_SCHEMA,
+        include_schemas=False,
     )
 
     with context.begin_transaction():
@@ -64,21 +75,40 @@ def run_migrations_offline() -> None:
 
 
 def do_run_migrations(connection: Connection) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata)
+    if TARGET_SCHEMA:
+        # alembic_version lives in TARGET_SCHEMA, and alembic creates it before
+        # running the first migration, so the schema must already exist. Commit
+        # it so it's visible once alembic opens its own transaction below.
+        connection.execute(CreateSchema(TARGET_SCHEMA, if_not_exists=True))
+        connection.commit()
+
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        compare_type=True,
+        version_table_schema=TARGET_SCHEMA,
+        include_schemas=False,
+        include_object=include_object,
+    )
 
     with context.begin_transaction():
         context.run_migrations()
 
 
 async def run_async_migrations() -> None:
-    """In this scenario we need to create an Engine
-    and associate a connection with the context.
+    """Create an async engine and run migrations against a connection."""
+    connect_args: dict[str, Any] = {}
+    if TARGET_SCHEMA:
+        # Pin the migration connection to the target schema only. Without this
+        # reflection sees every search-path-visible table (all of `public`),
+        # producing spurious drops against unrelated tables. asyncpg applies
+        # this as a connection parameter rather than libpq `options`.
+        connect_args["server_settings"] = {"search_path": TARGET_SCHEMA}
 
-    """
-    connectable = async_engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
+    connectable = create_async_engine(
+        build_connection_string(),
         poolclass=pool.NullPool,
+        connect_args=connect_args,
     )
 
     async with connectable.connect() as connection:
