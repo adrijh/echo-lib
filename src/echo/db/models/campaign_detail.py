@@ -73,6 +73,8 @@ class CampaignDetail(Base):
 
     substage: Mapped[str] = mapped_column(String, nullable=True)
     rating: Mapped[str] = mapped_column(String, nullable=True)
+    payment_methods: Mapped[str | None] = mapped_column(String, nullable=True)
+    matgo_link: Mapped[str | None] = mapped_column(String, nullable=True)
 
     __table_args__ = (
         UniqueConstraint(
