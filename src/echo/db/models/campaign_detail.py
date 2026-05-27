@@ -61,7 +61,7 @@ class CampaignDetail(Base):
         default=list,
         nullable=False,
     )
-    
+
     last_called_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,

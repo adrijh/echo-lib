@@ -57,27 +57,38 @@ class DocumentORM(AgentsBase):
     )
 
     id: Mapped[UUID] = mapped_column(
-        PGUUID(as_uuid=True), primary_key=True, default=uuid4,
+        PGUUID(as_uuid=True),
+        primary_key=True,
+        default=uuid4,
     )
     scope: Mapped[Literal["shared", "tenant", "user"]] = mapped_column(
-        String(16), nullable=False,
+        String(16),
+        nullable=False,
     )
     tenant_id: Mapped[str] = mapped_column(
-        String(64), nullable=False, server_default="",
+        String(64),
+        nullable=False,
+        server_default="",
     )
     user_id: Mapped[str] = mapped_column(
-        String(128), nullable=False, server_default="",
+        String(128),
+        nullable=False,
+        server_default="",
     )
     filename: Mapped[str] = mapped_column(String(512), nullable=False)
     filename_normalized: Mapped[str] = mapped_column(String(512), nullable=False)
     mime_type: Mapped[str] = mapped_column(String(255), nullable=False)
     size_bytes: Mapped[int] = mapped_column(BigInteger, nullable=False)
     blob_key: Mapped[str] = mapped_column(
-        String(1024), nullable=False, unique=True,
+        String(1024),
+        nullable=False,
+        unique=True,
     )
     uploaded_by: Mapped[str] = mapped_column(String(128), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default=func.now(),
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

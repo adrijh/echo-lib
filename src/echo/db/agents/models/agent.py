@@ -40,12 +40,16 @@ class AgentORM(AgentsBase):
     )
 
     id: Mapped[UUID] = mapped_column(
-        PGUUID(as_uuid=True), primary_key=True, default=uuid4,
+        PGUUID(as_uuid=True),
+        primary_key=True,
+        default=uuid4,
     )
     tenant_id: Mapped[str] = mapped_column(String(64), nullable=False)
     user_id: Mapped[str] = mapped_column(String(128), nullable=False)
     scope: Mapped[Literal["tenant", "user"]] = mapped_column(
-        String(16), nullable=False, server_default="user",
+        String(16),
+        nullable=False,
+        server_default="user",
     )
     slug: Mapped[str] = mapped_column(String(64), nullable=False)
     name: Mapped[str] = mapped_column(String(128), nullable=False)
@@ -55,10 +59,15 @@ class AgentORM(AgentsBase):
     skills: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
     documents: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
     memory_enabled: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, server_default="true", default=True,
+        Boolean,
+        nullable=False,
+        server_default="true",
+        default=True,
     )
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default=func.now(),
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
