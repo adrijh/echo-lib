@@ -64,6 +64,12 @@ class AgentORM(AgentsBase):
         server_default="true",
         default=True,
     )
+    sandbox_enabled: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default="false", default=False,
+    )
+    publishers: Mapped[list[str]] = mapped_column(
+        JSONB, nullable=False, default=lambda: ["rabbitmq", "redis"],
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
