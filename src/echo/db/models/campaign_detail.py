@@ -61,7 +61,7 @@ class CampaignDetail(Base):
         default=list,
         nullable=False,
     )
-    
+
     last_called_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
@@ -73,6 +73,8 @@ class CampaignDetail(Base):
 
     substage: Mapped[str] = mapped_column(String, nullable=True)
     rating: Mapped[str] = mapped_column(String, nullable=True)
+    payment_methods: Mapped[str | None] = mapped_column(String, nullable=True)
+    matgo_link: Mapped[str | None] = mapped_column(String, nullable=True)
 
     __table_args__ = (
         UniqueConstraint(
