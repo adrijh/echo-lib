@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
@@ -67,8 +67,13 @@ class AgentORM(AgentsBase):
     sandbox_enabled: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default="false", default=False,
     )
-    publishers: Mapped[list[str]] = mapped_column(
-        JSONB, nullable=False, default=lambda: ["rabbitmq", "redis"],
+    publishers: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSONB,
+        nullable=False,
+        default=lambda: [
+            {"name": "rabbitmq", "config": {}},
+            {"name": "redis", "config": {}},
+        ],
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
