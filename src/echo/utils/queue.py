@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import os
 from collections.abc import Awaitable, Callable
-from typing import Any, Literal, NotRequired, Protocol, TypedDict, cast
+from typing import Any, Literal, NotRequired, Protocol, TypedDict
 from urllib.parse import quote
 
 import aio_pika
@@ -51,7 +51,7 @@ class QueueInfo(TypedDict):
     messages_ready: NotRequired[int]
     messages_unacknowledged: NotRequired[int]
     consumers: NotRequired[int]
-    state: NotRequired[Literal["running", "idle", "flow", "down"]]
+    state: NotRequired[Literal["running", "idle", "flow", "down", "minority", "crashed"]]
     type: NotRequired[str]
     durable: NotRequired[bool]
     node: NotRequired[str]
@@ -233,7 +233,7 @@ class RabbitManager:
         *,
         name_regex: str | None = None,
         columns: list[str] | None = None,
-    ) -> list[dict[str, Any]]:
+    ) -> list[QueueInfo]:
         """List queues in the configured vhost, optionally filtered server-side."""
         params: dict[str, str] = {"pagination": "false"}
         if name_regex is not None:
@@ -248,14 +248,14 @@ class RabbitManager:
             params=params,
         )
         resp.raise_for_status()
-        return cast(list[dict[str, Any]], resp.json())
+        return resp.json()
 
     async def list_queues_with_prefix(
         self,
         prefix: str,
         *,
         columns: list[str] | None = None,
-    ) -> list[dict[str, Any]]:
+    ) -> list[QueueInfo]:
         """List queues whose name starts with `prefix`."""
         # Escape regex metachars so '.' in 'echo.campaign.' isn't treated as a wildcard.
         import re
@@ -264,46 +264,6 @@ class RabbitManager:
 
     async def get_queue(self, name: str, **kwargs: Any) -> RabbitQueue:
         return await get_queue(name, **kwargs)
-
-
-    # async def queue_names_with_prefix(self, prefix: str) -> list[str]:
-    #     """List queue names which start with `prefix`."""
-    #     queues = await self.list_queues_with_prefix(prefix, columns=["name"])
-    #     return [q["name"] for q in queues]
-    #
-    # async def purge_queue(self, name: str) -> None:
-    #     resp = await self._client.delete(
-    #         f"/api/queues/{self._vhost_encoded}/{quote(name, safe='')}/contents",
-    #     )
-    #     resp.raise_for_status()
-    #
-    # async def delete_queue(
-    #     self,
-    #     name: str,
-    #     *,
-    #     if_empty: bool = False,
-    #     if_unused: bool = False,
-    # ) -> None:
-    #     params: dict[str, str] = {}
-    #     if if_empty:
-    #         params["if-empty"] = "true"
-    #     if if_unused:
-    #         params["if-unused"] = "true"
-    #
-    #     resp = await self._client.delete(
-    #         f"/api/queues/{self._vhost_encoded}/{quote(name, safe='')}",
-    #         params=params,
-    #     )
-    #     resp.raise_for_status()
-    #
-    # async def purge_queues_with_prefix(self, prefix: str) -> list[str]:
-    #     """Purge every queue matching `prefix`. Returns the names that were purged."""
-    #     names = await self.queue_names_with_prefix(prefix)
-    #     for name in names:
-    #         await self.purge_queue(name)
-    #         log.info("purged queue", extra={"queue": name})
-    #     return names
-
 
 
 _manager: RabbitManager | None = None
