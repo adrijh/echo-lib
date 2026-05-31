@@ -84,11 +84,12 @@ class RabbitConnection:
         *,
         prefetch: int = 1,
         durable: bool = False,
+        arguments: dict[str, Any] | None = None,
     ) -> RabbitQueue:
         channel = await self._conn.channel()
         await channel.set_qos(prefetch_count=prefetch)
 
-        queue = await channel.declare_queue(name, durable=durable)
+        queue = await channel.declare_queue(name, durable=durable, arguments=arguments)
 
         self._channels.append(channel)
 
@@ -292,6 +293,7 @@ async def get_queue(
     *,
     prefetch: int = 1,
     bootstrap: bool = False,
+    arguments: dict[str, Any] | None = None,
 ) -> RabbitQueue:
     if name not in _queues:
         async with _queues_lock:
@@ -302,6 +304,7 @@ async def get_queue(
                     _queues[name] = await conn.create_queue(
                         name,
                         prefetch=prefetch,
+                        arguments=arguments,
                     )
                 else:
                     _queues[name] = await conn.get_queue(
