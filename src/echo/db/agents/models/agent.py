@@ -7,6 +7,7 @@ from sqlalchemy import (
     CheckConstraint,
     DateTime,
     Index,
+    Integer,
     String,
     Text,
     UniqueConstraint,
@@ -69,6 +70,15 @@ class AgentORM(AgentsBase):
         nullable=False,
         server_default="false",
         default=False,
+    )
+    # Seconds to wait after an inbound message before processing. Messages that
+    # arrive within the window are coalesced into a single agent turn (sliding
+    # window). 0 disables batching: the agent responds immediately.
+    batch_window_seconds: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        server_default="0",
+        default=0,
     )
     publishers: Mapped[list[dict[str, Any]]] = mapped_column(
         JSONB,
