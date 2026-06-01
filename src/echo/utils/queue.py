@@ -185,6 +185,7 @@ class RabbitQueue:
             routing_key=self.queue.name,
         )
 
+
 class RabbitManager:
     """Management-API client for RabbitMQ.
 
@@ -260,6 +261,7 @@ class RabbitManager:
         """List queues whose name starts with `prefix`."""
         # Escape regex metachars so '.' in 'echo.campaign.' isn't treated as a wildcard.
         import re
+
         escaped = re.escape(prefix)
         return await self.list_queues(name_regex=f"^{escaped}", columns=columns)
 
