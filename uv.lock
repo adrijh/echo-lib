@@ -403,7 +403,7 @@ wheels = [
 
 [[package]]
 name = "echo"
-version = "0.3.7"
+version = "0.3.8b1"
 source = { editable = "." }
 dependencies = [
     { name = "pydantic" },
