@@ -65,7 +65,10 @@ class AgentORM(AgentsBase):
         default=True,
     )
     sandbox_enabled: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, server_default="false", default=False,
+        Boolean,
+        nullable=False,
+        server_default="false",
+        default=False,
     )
     publishers: Mapped[list[dict[str, Any]]] = mapped_column(
         JSONB,
